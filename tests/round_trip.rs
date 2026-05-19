@@ -307,11 +307,11 @@ fn spirit_canonical_examples_round_trip() {
         SpiritRequest::Statement(Statement {
             statement: StatementText::new("capture this intent"),
         }),
-        "(Statement \"capture this intent\")",
+        "(Statement (\"capture this intent\"))",
     );
     round_trip_nota(
         SpiritRequest::Entry(entry()),
-        "(Entry workspace Decision \"summary only\" \"current implementation context\" Maximum \"2026-05-19T13:08:11Z\" \"first statement\")",
+        "(Entry (workspace Decision \"summary only\" \"current implementation context\" Maximum \"2026-05-19T13:08:11Z\" \"first statement\"))",
     );
     round_trip_nota(
         SpiritRequest::RecordObservation(RecordObservation {
@@ -320,22 +320,22 @@ fn spirit_canonical_examples_round_trip() {
                 mode: ObservationMode::SummaryOnly,
             },
         }),
-        "(RecordObservation (RecordQuery None SummaryOnly))",
+        "(RecordObservation ((None SummaryOnly)))",
     );
     round_trip_nota(
         SpiritReply::RecordAccepted(RecordAccepted {
             captured: summary(),
         }),
-        "(RecordAccepted (RecordSummary 1 workspace Decision \"summary only\" Maximum))",
+        "(RecordAccepted ((1 workspace Decision \"summary only\" Maximum)))",
     );
     round_trip_nota(
         SpiritReply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
         }),
-        "(RecordProvenancesObserved [(RecordProvenance (RecordSummary 1 workspace Decision \"summary only\" Maximum) \"current implementation context\" \"2026-05-19T13:08:11Z\" \"first statement\")])",
+        "(RecordProvenancesObserved ([((1 workspace Decision \"summary only\" Maximum) \"current implementation context\" \"2026-05-19T13:08:11Z\" \"first statement\")]))",
     );
     round_trip_nota(
         SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }),
-        "(RecordCaptured (RecordSummary 1 workspace Decision \"summary only\" Maximum))",
+        "(RecordCaptured ((1 workspace Decision \"summary only\" Maximum)))",
     );
 }
