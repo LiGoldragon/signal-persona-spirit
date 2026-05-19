@@ -18,6 +18,9 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 ## Invariants
 
 - `PsycheStatement` is an `Assert`.
+- `IntentEntry` is an `Assert` for agents submitting already typed intent.
+- `IntentEntry.verbatim` is a `Vec<IntentVerbatim>` so restatements are preserved
+  as timestamped psyche statements.
 - Query variants are `Match`.
 - Stream-open variants are `Subscribe` and carry explicit stream relations.
 - Stream-close variants are `Retract`.

@@ -1,4 +1,5 @@
 (PsycheStatement "capture this intent")
+(IntentEntry workspace Decision "summary only" "current implementation context" Maximum [(IntentVerbatim "2026-05-19T13:08:11Z" "first statement") (IntentVerbatim "2026-05-19T13:12:00Z" "restated statement")])
 (PsycheStateObservation)
 (IntentRecordObservation (IntentRecordQuery None SummaryOnly))
 (IntentRecordObservation (IntentRecordQuery None WithProvenance))

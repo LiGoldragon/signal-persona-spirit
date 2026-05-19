@@ -6,14 +6,15 @@ use signal_core::{
 use signal_persona_spirit::{
     ClarificationQuestionIdentifier, ClarificationQuestionPending, ClarificationQuestionSummary,
     ClarificationQuestionText, ClarificationQuestionsObserved, Frame, FrameBody, IntentCertainty,
-    IntentKind, IntentObservationMode, IntentRecordCaptured, IntentRecordIdentifier,
-    IntentRecordObservation, IntentRecordQuery, IntentRecordSubscription,
-    IntentRecordSubscriptionOpened, IntentRecordSubscriptionToken, IntentRecordsObserved,
-    IntentSummary, IntentTopic, PsycheFocusArea, PsychePresence, PsycheState, PsycheStateChanged,
-    PsycheStateObservation, PsycheStateObserved, PsycheStateSubscription,
-    PsycheStateSubscriptionOpened, PsycheStateSubscriptionToken, PsycheStatement,
-    PsycheStatementAccepted, PsycheStatementText, SpiritEvent, SpiritOperationKind, SpiritReply,
-    SpiritRequest, SpiritRequestUnimplemented, SpiritUnimplementedReason,
+    IntentContext, IntentEntry, IntentKind, IntentObservationMode, IntentQuote,
+    IntentRecordCaptured, IntentRecordIdentifier, IntentRecordObservation, IntentRecordQuery,
+    IntentRecordSubscription, IntentRecordSubscriptionOpened, IntentRecordSubscriptionToken,
+    IntentRecordsObserved, IntentSummary, IntentTimestamp, IntentTopic, IntentVerbatim,
+    PsycheFocusArea, PsychePresence, PsycheState, PsycheStateChanged, PsycheStateObservation,
+    PsycheStateObserved, PsycheStateSubscription, PsycheStateSubscriptionOpened,
+    PsycheStateSubscriptionToken, PsycheStatement, PsycheStatementAccepted, PsycheStatementText,
+    SpiritEvent, SpiritOperationKind, SpiritReply, SpiritRequest, SpiritRequestUnimplemented,
+    SpiritUnimplementedReason,
 };
 
 const CANONICAL: &str = include_str!("../examples/canonical.nota");
@@ -33,6 +34,26 @@ fn summary() -> signal_persona_spirit::IntentRecordSummary {
         kind: IntentKind::Decision,
         summary: IntentSummary::new("summary only"),
         certainty: IntentCertainty::Maximum,
+    }
+}
+
+fn entry() -> IntentEntry {
+    IntentEntry {
+        topic: IntentTopic::new("workspace"),
+        kind: IntentKind::Decision,
+        summary: IntentSummary::new("summary only"),
+        context: IntentContext::new("current implementation context"),
+        certainty: IntentCertainty::Maximum,
+        verbatim: vec![
+            IntentVerbatim {
+                timestamp: IntentTimestamp::new("2026-05-19T13:08:11Z"),
+                quote: IntentQuote::new("first statement"),
+            },
+            IntentVerbatim {
+                timestamp: IntentTimestamp::new("2026-05-19T13:12:00Z"),
+                quote: IntentQuote::new("restated statement"),
+            },
+        ],
     }
 }
 
@@ -107,6 +128,7 @@ fn spirit_requests_round_trip() {
         SpiritRequest::PsycheStatement(PsycheStatement {
             statement: PsycheStatementText::new("capture this intent"),
         }),
+        SpiritRequest::IntentEntry(entry()),
         SpiritRequest::PsycheStateObservation(PsycheStateObservation {}),
         SpiritRequest::IntentRecordObservation(IntentRecordObservation {
             query: IntentRecordQuery {
@@ -203,6 +225,7 @@ fn spirit_request_variants_declare_expected_signal_root_verbs() {
             }),
             SignalVerb::Assert,
         ),
+        (SpiritRequest::IntentEntry(entry()), SignalVerb::Assert),
         (
             SpiritRequest::PsycheStateObservation(PsycheStateObservation {}),
             SignalVerb::Match,
@@ -260,6 +283,10 @@ fn spirit_request_exposes_contract_owned_operation_kind() {
         SpiritOperationKind::PsycheStatement
     );
     assert_eq!(
+        SpiritRequest::IntentEntry(entry()).operation_kind(),
+        SpiritOperationKind::IntentEntry
+    );
+    assert_eq!(
         SpiritRequest::SubscribeIntentRecords(IntentRecordSubscription {
             topic: None,
             mode: IntentObservationMode::SummaryOnly,
@@ -288,6 +315,10 @@ fn spirit_canonical_examples_round_trip() {
             statement: PsycheStatementText::new("capture this intent"),
         }),
         "(PsycheStatement \"capture this intent\")",
+    );
+    round_trip_nota(
+        SpiritRequest::IntentEntry(entry()),
+        "(IntentEntry workspace Decision \"summary only\" \"current implementation context\" Maximum [(IntentVerbatim \"2026-05-19T13:08:11Z\" \"first statement\") (IntentVerbatim \"2026-05-19T13:12:00Z\" \"restated statement\")])",
     );
     round_trip_nota(
         SpiritRequest::IntentRecordObservation(IntentRecordObservation {

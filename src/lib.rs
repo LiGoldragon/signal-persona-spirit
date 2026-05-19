@@ -181,6 +181,22 @@ pub struct PsycheStatement {
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct IntentVerbatim {
+    pub timestamp: IntentTimestamp,
+    pub quote: IntentQuote,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct IntentEntry {
+    pub topic: IntentTopic,
+    pub kind: IntentKind,
+    pub summary: IntentSummary,
+    pub context: IntentContext,
+    pub certainty: IntentCertainty,
+    pub verbatim: Vec<IntentVerbatim>,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct PsycheStateObservation {}
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -218,9 +234,8 @@ pub struct IntentRecordSummary {
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct IntentRecordProvenance {
     pub summary: IntentRecordSummary,
-    pub quote: IntentQuote,
     pub context: IntentContext,
-    pub timestamp: IntentTimestamp,
+    pub verbatim: Vec<IntentVerbatim>,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -302,6 +317,7 @@ pub struct IntentRecordSubscriptionOpened {
 )]
 pub enum SpiritOperationKind {
     PsycheStatement,
+    IntentEntry,
     PsycheStateObservation,
     IntentRecordObservation,
     ClarificationQuestionPending,
@@ -339,6 +355,7 @@ signal_channel! {
     channel Spirit {
         request SpiritRequest {
             Assert PsycheStatement(PsycheStatement),
+            Assert IntentEntry(IntentEntry),
             Match PsycheStateObservation(PsycheStateObservation),
             Match IntentRecordObservation(IntentRecordObservation),
             Match ClarificationQuestionPending(ClarificationQuestionPending),
@@ -385,6 +402,7 @@ impl SpiritRequest {
     pub fn operation_kind(&self) -> SpiritOperationKind {
         match self {
             Self::PsycheStatement(_) => SpiritOperationKind::PsycheStatement,
+            Self::IntentEntry(_) => SpiritOperationKind::IntentEntry,
             Self::PsycheStateObservation(_) => SpiritOperationKind::PsycheStateObservation,
             Self::IntentRecordObservation(_) => SpiritOperationKind::IntentRecordObservation,
             Self::ClarificationQuestionPending(_) => {
