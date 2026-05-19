@@ -181,19 +181,19 @@ pub struct PsycheStatement {
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct IntentVerbatim {
+pub struct Verbatim {
     pub timestamp: IntentTimestamp,
     pub quote: IntentQuote,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct IntentEntry {
+pub struct Entry {
     pub topic: IntentTopic,
     pub kind: IntentKind,
     pub summary: IntentSummary,
     pub context: IntentContext,
     pub certainty: IntentCertainty,
-    pub verbatim: Vec<IntentVerbatim>,
+    pub verbatim: Vec<Verbatim>,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -235,7 +235,7 @@ pub struct IntentRecordSummary {
 pub struct IntentRecordProvenance {
     pub summary: IntentRecordSummary,
     pub context: IntentContext,
-    pub verbatim: Vec<IntentVerbatim>,
+    pub verbatim: Vec<Verbatim>,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -317,7 +317,7 @@ pub struct IntentRecordSubscriptionOpened {
 )]
 pub enum SpiritOperationKind {
     PsycheStatement,
-    IntentEntry,
+    Entry,
     PsycheStateObservation,
     IntentRecordObservation,
     ClarificationQuestionPending,
@@ -355,7 +355,7 @@ signal_channel! {
     channel Spirit {
         request SpiritRequest {
             Assert PsycheStatement(PsycheStatement),
-            Assert IntentEntry(IntentEntry),
+            Assert Entry(Entry),
             Match PsycheStateObservation(PsycheStateObservation),
             Match IntentRecordObservation(IntentRecordObservation),
             Match ClarificationQuestionPending(ClarificationQuestionPending),
@@ -402,7 +402,7 @@ impl SpiritRequest {
     pub fn operation_kind(&self) -> SpiritOperationKind {
         match self {
             Self::PsycheStatement(_) => SpiritOperationKind::PsycheStatement,
-            Self::IntentEntry(_) => SpiritOperationKind::IntentEntry,
+            Self::Entry(_) => SpiritOperationKind::Entry,
             Self::PsycheStateObservation(_) => SpiritOperationKind::PsycheStateObservation,
             Self::IntentRecordObservation(_) => SpiritOperationKind::IntentRecordObservation,
             Self::ClarificationQuestionPending(_) => {

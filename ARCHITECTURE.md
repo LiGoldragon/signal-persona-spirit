@@ -18,7 +18,7 @@ logic, and mind forwarding live in `persona-spirit`.
 | Request | Signal verb | Meaning |
 |---|---|---|
 | `PsycheStatement` | `Assert` | A psyche prompt entered the system. |
-| `IntentEntry` | `Assert` | An agent submits a typed intent entry for type-checked logging. |
+| `Entry` | `Assert` | An agent submits a typed intent entry for type-checked logging. |
 | `PsycheStateObservation` | `Match` | Query spirit's current psyche-state summary. |
 | `IntentRecordObservation` | `Match` | Query intent records, summary-first by default. |
 | `ClarificationQuestionPending` | `Match` | Query open intent-clarification questions. |
@@ -34,7 +34,7 @@ logic, and mind forwarding live in `persona-spirit`.
 | Every request variant declares a Signal root verb. | `round_trip.rs` checks every request's `signal_verb()`. |
 | Subscribe variants declare stream relations. | `signal_channel!` stream blocks bind subscribe/open/event/close. |
 | Intent queries are summary-first unless a richer mode is requested. | `IntentObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
-| Intent entries preserve every restatement. | `IntentEntry.verbatim` is a vector of timestamped `IntentVerbatim` records; round-trip tests use two verbatim records. |
+| Intent entries preserve every restatement. | `Entry.verbatim` is a vector of timestamped `Verbatim` records; round-trip tests use two verbatim records. |
 | This crate contains no runtime. | Source has no Kameo, Tokio, sockets, redb, or sema-engine code. |
 
 ## Code Map
