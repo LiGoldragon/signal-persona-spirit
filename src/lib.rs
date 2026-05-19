@@ -322,6 +322,16 @@ pub struct RecordSubscriptionOpened {
     pub snapshot: Vec<RecordSummary>,
 }
 
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct StateSubscriptionRetracted {
+    pub token: StateSubscriptionToken,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct RecordSubscriptionRetracted {
+    pub token: RecordSubscriptionToken,
+}
+
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
 )]
@@ -382,6 +392,8 @@ signal_channel! {
             QuestionsObserved(QuestionsObserved),
             StateSubscriptionOpened(StateSubscriptionOpened),
             RecordSubscriptionOpened(RecordSubscriptionOpened),
+            StateSubscriptionRetracted(StateSubscriptionRetracted),
+            RecordSubscriptionRetracted(RecordSubscriptionRetracted),
             RequestUnimplemented(RequestUnimplemented),
         }
         event SpiritEvent {
@@ -464,6 +476,18 @@ impl From<StateSubscriptionOpened> for SpiritReply {
 impl From<RecordSubscriptionOpened> for SpiritReply {
     fn from(payload: RecordSubscriptionOpened) -> Self {
         Self::RecordSubscriptionOpened(payload)
+    }
+}
+
+impl From<StateSubscriptionRetracted> for SpiritReply {
+    fn from(payload: StateSubscriptionRetracted) -> Self {
+        Self::StateSubscriptionRetracted(payload)
+    }
+}
+
+impl From<RecordSubscriptionRetracted> for SpiritReply {
+    fn from(payload: RecordSubscriptionRetracted) -> Self {
+        Self::RecordSubscriptionRetracted(payload)
     }
 }
 

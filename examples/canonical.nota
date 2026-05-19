@@ -15,6 +15,8 @@
 (QuestionsObserved ([((question-one) "which intent wins?")]))
 (StateSubscriptionOpened ((1) (Active "implementation")))
 (RecordSubscriptionOpened ((2) [(1 workspace Decision "summary only" Maximum)]))
+(StateSubscriptionRetracted ((1)))
+(RecordSubscriptionRetracted ((2)))
 (RequestUnimplemented (Statement NotBuiltYet))
 (StateChanged ((Active "implementation")))
 (RecordCaptured ((1 workspace Decision "summary only" Maximum)))

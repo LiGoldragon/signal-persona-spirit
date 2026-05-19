@@ -33,6 +33,7 @@ logic, and mind forwarding live in `persona-spirit`.
 |---|---|
 | Every request variant declares a Signal root verb. | `round_trip.rs` checks every request's `signal_verb()`. |
 | Subscribe variants declare stream relations. | `signal_channel!` stream blocks bind subscribe/open/event/close. |
+| Retract variants have typed close acknowledgements. | `StateSubscriptionRetracted` and `RecordSubscriptionRetracted` round-trip through RKYV and NOTA. |
 | Intent queries are summary-first unless a richer mode is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
 | Every entry is one top-level psyche statement. | `Entry` carries one timestamp and one quote; repeated entries are the restatement signal. |
 | Record identifiers are output-only. | `RecordIdentifier` appears in summaries/provenance replies, not in `Entry`. |

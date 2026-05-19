@@ -8,10 +8,11 @@ use signal_persona_spirit::{
     Presence, QuestionIdentifier, QuestionPending, QuestionSummary, QuestionText,
     QuestionsObserved, Quote, RecordAccepted, RecordCaptured, RecordIdentifier, RecordObservation,
     RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
-    RecordSubscriptionOpened, RecordSubscriptionToken, RecordsObserved, RequestUnimplemented,
-    SpiritEvent, SpiritReply, SpiritRequest, State, StateChanged, StateObservation, StateObserved,
-    StateSubscription, StateSubscriptionOpened, StateSubscriptionToken, Statement, StatementText,
-    Summary, Timestamp, Topic, UnimplementedReason,
+    RecordSubscriptionOpened, RecordSubscriptionRetracted, RecordSubscriptionToken,
+    RecordsObserved, RequestUnimplemented, SpiritEvent, SpiritReply, SpiritRequest, State,
+    StateChanged, StateObservation, StateObserved, StateSubscription, StateSubscriptionOpened,
+    StateSubscriptionRetracted, StateSubscriptionToken, Statement, StatementText, Summary,
+    Timestamp, Topic, UnimplementedReason,
 };
 
 const CANONICAL: &str = include_str!("../examples/canonical.nota");
@@ -176,6 +177,12 @@ fn spirit_replies_round_trip() {
             token: RecordSubscriptionToken { identifier: 2 },
             snapshot: vec![summary()],
         }),
+        SpiritReply::StateSubscriptionRetracted(StateSubscriptionRetracted {
+            token: StateSubscriptionToken { identifier: 1 },
+        }),
+        SpiritReply::RecordSubscriptionRetracted(RecordSubscriptionRetracted {
+            token: RecordSubscriptionToken { identifier: 2 },
+        }),
         SpiritReply::RequestUnimplemented(RequestUnimplemented {
             operation: OperationKind::Statement,
             reason: UnimplementedReason::NotBuiltYet,
@@ -299,6 +306,16 @@ fn spirit_stream_witnesses_are_emitted() {
         SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }).stream_kind(),
         signal_persona_spirit::SpiritStreamKind::RecordStream
     );
+    assert_eq!(
+        SpiritRequest::StateSubscriptionRetraction(StateSubscriptionToken { identifier: 1 })
+            .closed_stream(),
+        Some(signal_persona_spirit::SpiritStreamKind::StateStream)
+    );
+    assert_eq!(
+        SpiritRequest::RecordSubscriptionRetraction(RecordSubscriptionToken { identifier: 2 })
+            .closed_stream(),
+        Some(signal_persona_spirit::SpiritStreamKind::RecordStream)
+    );
 }
 
 #[test]
@@ -337,5 +354,17 @@ fn spirit_canonical_examples_round_trip() {
     round_trip_nota(
         SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }),
         "(RecordCaptured ((1 workspace Decision \"summary only\" Maximum)))",
+    );
+    round_trip_nota(
+        SpiritReply::StateSubscriptionRetracted(StateSubscriptionRetracted {
+            token: StateSubscriptionToken { identifier: 1 },
+        }),
+        "(StateSubscriptionRetracted ((1)))",
+    );
+    round_trip_nota(
+        SpiritReply::RecordSubscriptionRetracted(RecordSubscriptionRetracted {
+            token: RecordSubscriptionToken { identifier: 2 },
+        }),
+        "(RecordSubscriptionRetracted ((2)))",
     );
 }
