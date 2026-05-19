@@ -13,6 +13,33 @@ Privileged lifecycle/configuration orders live in
 `owner-signal-persona-spirit`. Runtime actors, sockets, storage, classifier
 logic, and mind forwarding live in `persona-spirit`.
 
+## MUST IMPLEMENT — signal architecture migration
+
+This contract is migrating to contract-local verbs per
+`primary/reports/designer/238-signal-architecture-redirection-contract-local-verbs.md`
+and `primary/reports/designer/239-signal-architecture-migration-plan.md`.
+
+Drop the `Assert Statement` / `Assert Entry` / `Match *Observation` /
+`Subscribe *Subscription` / `Retract *SubscriptionRetraction` shape.
+Use contract-local verbs: `State` (the psyche stating intent, payload
+`Quote` or `Statement`), `Record` (an agent submitting a typed intent
+entry, payload `Entry`), `Observe` (the read side — payload is a
+closed `Observation` enum naming `State`, `Records`, `QuestionsPending`,
+etc.), `Watch` (subscriptions — payload names which stream class to
+open). Apply the verb-form rule per `intent/naming.nota` 19:45Z:
+`State` not `Statement`, `Record` not `Entry`-as-a-verb, `Observe` not
+`Observation`. The operator's pending rename pass under bead
+`primary-ojxq` (the persona-spirit triad implementation) should
+expand to absorb this broader refactor — drop the SignalVerb wrappers
+entirely rather than the narrower `Intent*` prefix drop alone.
+
+References: `primary/reports/designer/238-signal-architecture-redirection-contract-local-verbs.md`,
+`primary/reports/designer/239-signal-architecture-migration-plan.md`.
+
+**Note to remover:** when the refactor lands, remove this section and
+add a `## Migration history — contract-local verbs (2026-05-XX)`
+paragraph noting the shape change.
+
 ## Contract Surface
 
 | Request | Signal verb | Meaning |
