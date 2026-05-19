@@ -17,15 +17,15 @@ logic, and mind forwarding live in `persona-spirit`.
 
 | Request | Signal verb | Meaning |
 |---|---|---|
-| `PsycheStatement` | `Assert` | A psyche prompt entered the system. |
+| `Statement` | `Assert` | A psyche prompt entered the system. |
 | `Entry` | `Assert` | An agent submits a typed intent entry for type-checked logging. |
-| `PsycheStateObservation` | `Match` | Query spirit's current psyche-state summary. |
-| `IntentRecordObservation` | `Match` | Query intent records, summary-first by default. |
-| `ClarificationQuestionPending` | `Match` | Query open intent-clarification questions. |
-| `SubscribePsycheState` | `Subscribe` | Open the psyche-state stream. |
-| `PsycheStateSubscriptionRetraction` | `Retract` | Close the psyche-state stream. |
-| `SubscribeIntentRecords` | `Subscribe` | Open the intent-record stream. |
-| `IntentRecordSubscriptionRetraction` | `Retract` | Close the intent-record stream. |
+| `StateObservation` | `Match` | Query spirit's current psyche-state summary. |
+| `RecordObservation` | `Match` | Query intent records, summary-first by default. |
+| `QuestionPending` | `Match` | Query open intent-clarification questions. |
+| `SubscribeState` | `Subscribe` | Open the psyche-state stream. |
+| `StateSubscriptionRetraction` | `Retract` | Close the psyche-state stream. |
+| `SubscribeRecords` | `Subscribe` | Open the intent-record stream. |
+| `RecordSubscriptionRetraction` | `Retract` | Close the intent-record stream. |
 
 ## Constraints
 
@@ -33,8 +33,9 @@ logic, and mind forwarding live in `persona-spirit`.
 |---|---|
 | Every request variant declares a Signal root verb. | `round_trip.rs` checks every request's `signal_verb()`. |
 | Subscribe variants declare stream relations. | `signal_channel!` stream blocks bind subscribe/open/event/close. |
-| Intent queries are summary-first unless a richer mode is requested. | `IntentObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
-| Intent entries preserve every restatement. | `Entry.verbatim` is a vector of timestamped `Verbatim` records; round-trip tests use two verbatim records. |
+| Intent queries are summary-first unless a richer mode is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
+| Every entry is one top-level psyche statement. | `Entry` carries one timestamp and one quote; repeated entries are the restatement signal. |
+| Record identifiers are output-only. | `RecordIdentifier` appears in summaries/provenance replies, not in `Entry`. |
 | This crate contains no runtime. | Source has no Kameo, Tokio, sockets, redb, or sema-engine code. |
 
 ## Code Map

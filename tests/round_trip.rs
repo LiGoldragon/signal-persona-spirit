@@ -4,17 +4,14 @@ use signal_core::{
     SignalVerb, StreamEventIdentifier, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    ClarificationQuestionIdentifier, ClarificationQuestionPending, ClarificationQuestionSummary,
-    ClarificationQuestionText, ClarificationQuestionsObserved, Entry, Frame, FrameBody,
-    IntentCertainty, IntentContext, IntentKind, IntentObservationMode, IntentQuote,
-    IntentRecordCaptured, IntentRecordIdentifier, IntentRecordObservation, IntentRecordQuery,
-    IntentRecordSubscription, IntentRecordSubscriptionOpened, IntentRecordSubscriptionToken,
-    IntentRecordsObserved, IntentSummary, IntentTimestamp, IntentTopic, PsycheFocusArea,
-    PsychePresence, PsycheState, PsycheStateChanged, PsycheStateObservation, PsycheStateObserved,
-    PsycheStateSubscription, PsycheStateSubscriptionOpened, PsycheStateSubscriptionToken,
-    PsycheStatement, PsycheStatementAccepted, PsycheStatementText, SpiritEvent,
-    SpiritOperationKind, SpiritReply, SpiritRequest, SpiritRequestUnimplemented,
-    SpiritUnimplementedReason, Verbatim,
+    Certainty, Context, Entry, FocusArea, Frame, FrameBody, Kind, ObservationMode, OperationKind,
+    Presence, QuestionIdentifier, QuestionPending, QuestionSummary, QuestionText,
+    QuestionsObserved, Quote, RecordAccepted, RecordCaptured, RecordIdentifier, RecordObservation,
+    RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
+    RecordSubscriptionOpened, RecordSubscriptionToken, RecordsObserved, RequestUnimplemented,
+    SpiritEvent, SpiritReply, SpiritRequest, State, StateChanged, StateObservation, StateObserved,
+    StateSubscription, StateSubscriptionOpened, StateSubscriptionToken, Statement, StatementText,
+    Summary, Timestamp, Topic, UnimplementedReason,
 };
 
 const CANONICAL: &str = include_str!("../examples/canonical.nota");
@@ -27,40 +24,41 @@ fn exchange() -> ExchangeIdentifier {
     )
 }
 
-fn summary() -> signal_persona_spirit::IntentRecordSummary {
-    signal_persona_spirit::IntentRecordSummary {
-        identifier: IntentRecordIdentifier::new("record-one"),
-        topic: IntentTopic::new("workspace"),
-        kind: IntentKind::Decision,
-        summary: IntentSummary::new("summary only"),
-        certainty: IntentCertainty::Maximum,
+fn summary() -> signal_persona_spirit::RecordSummary {
+    signal_persona_spirit::RecordSummary {
+        identifier: RecordIdentifier::new(1),
+        topic: Topic::new("workspace"),
+        kind: Kind::Decision,
+        summary: Summary::new("summary only"),
+        certainty: Certainty::Maximum,
+    }
+}
+
+fn provenance() -> RecordProvenance {
+    RecordProvenance {
+        summary: summary(),
+        context: Context::new("current implementation context"),
+        timestamp: Timestamp::new("2026-05-19T13:08:11Z"),
+        quote: Quote::new("first statement"),
     }
 }
 
 fn entry() -> Entry {
     Entry {
-        topic: IntentTopic::new("workspace"),
-        kind: IntentKind::Decision,
-        summary: IntentSummary::new("summary only"),
-        context: IntentContext::new("current implementation context"),
-        certainty: IntentCertainty::Maximum,
-        verbatim: vec![
-            Verbatim {
-                timestamp: IntentTimestamp::new("2026-05-19T13:08:11Z"),
-                quote: IntentQuote::new("first statement"),
-            },
-            Verbatim {
-                timestamp: IntentTimestamp::new("2026-05-19T13:12:00Z"),
-                quote: IntentQuote::new("restated statement"),
-            },
-        ],
+        topic: Topic::new("workspace"),
+        kind: Kind::Decision,
+        summary: Summary::new("summary only"),
+        context: Context::new("current implementation context"),
+        certainty: Certainty::Maximum,
+        timestamp: Timestamp::new("2026-05-19T13:08:11Z"),
+        quote: Quote::new("first statement"),
     }
 }
 
-fn state() -> PsycheState {
-    PsycheState {
-        presence: PsychePresence::Active,
-        focus: Some(PsycheFocusArea::new("implementation")),
+fn state() -> State {
+    State {
+        presence: Presence::Active,
+        focus: Some(FocusArea::new("implementation")),
     }
 }
 
@@ -125,29 +123,25 @@ where
 #[test]
 fn spirit_requests_round_trip() {
     let requests = [
-        SpiritRequest::PsycheStatement(PsycheStatement {
-            statement: PsycheStatementText::new("capture this intent"),
+        SpiritRequest::Statement(Statement {
+            statement: StatementText::new("capture this intent"),
         }),
         SpiritRequest::Entry(entry()),
-        SpiritRequest::PsycheStateObservation(PsycheStateObservation {}),
-        SpiritRequest::IntentRecordObservation(IntentRecordObservation {
-            query: IntentRecordQuery {
+        SpiritRequest::StateObservation(StateObservation {}),
+        SpiritRequest::RecordObservation(RecordObservation {
+            query: RecordQuery {
                 topic: None,
-                mode: IntentObservationMode::SummaryOnly,
+                mode: ObservationMode::SummaryOnly,
             },
         }),
-        SpiritRequest::ClarificationQuestionPending(ClarificationQuestionPending {}),
-        SpiritRequest::SubscribePsycheState(PsycheStateSubscription {}),
-        SpiritRequest::PsycheStateSubscriptionRetraction(PsycheStateSubscriptionToken {
-            identifier: 1,
-        }),
-        SpiritRequest::SubscribeIntentRecords(IntentRecordSubscription {
+        SpiritRequest::QuestionPending(QuestionPending {}),
+        SpiritRequest::SubscribeState(StateSubscription {}),
+        SpiritRequest::StateSubscriptionRetraction(StateSubscriptionToken { identifier: 1 }),
+        SpiritRequest::SubscribeRecords(RecordSubscription {
             topic: None,
-            mode: IntentObservationMode::SummaryOnly,
+            mode: ObservationMode::SummaryOnly,
         }),
-        SpiritRequest::IntentRecordSubscriptionRetraction(IntentRecordSubscriptionToken {
-            identifier: 2,
-        }),
+        SpiritRequest::RecordSubscriptionRetraction(RecordSubscriptionToken { identifier: 2 }),
     ];
 
     for request in requests {
@@ -158,30 +152,33 @@ fn spirit_requests_round_trip() {
 #[test]
 fn spirit_replies_round_trip() {
     let replies = [
-        SpiritReply::PsycheStatementAccepted(PsycheStatementAccepted {
+        SpiritReply::RecordAccepted(RecordAccepted {
             captured: summary(),
         }),
-        SpiritReply::PsycheStateObserved(PsycheStateObserved { state: state() }),
-        SpiritReply::IntentRecordsObserved(IntentRecordsObserved {
+        SpiritReply::StateObserved(StateObserved { state: state() }),
+        SpiritReply::RecordsObserved(RecordsObserved {
             records: vec![summary()],
         }),
-        SpiritReply::ClarificationQuestionsObserved(ClarificationQuestionsObserved {
-            questions: vec![ClarificationQuestionSummary {
-                identifier: ClarificationQuestionIdentifier::new("question-one"),
-                question: ClarificationQuestionText::new("which intent wins?"),
+        SpiritReply::RecordProvenancesObserved(RecordProvenancesObserved {
+            records: vec![provenance()],
+        }),
+        SpiritReply::QuestionsObserved(QuestionsObserved {
+            questions: vec![QuestionSummary {
+                identifier: QuestionIdentifier::new("question-one"),
+                question: QuestionText::new("which intent wins?"),
             }],
         }),
-        SpiritReply::PsycheStateSubscriptionOpened(PsycheStateSubscriptionOpened {
-            token: PsycheStateSubscriptionToken { identifier: 1 },
+        SpiritReply::StateSubscriptionOpened(StateSubscriptionOpened {
+            token: StateSubscriptionToken { identifier: 1 },
             snapshot: state(),
         }),
-        SpiritReply::IntentRecordSubscriptionOpened(IntentRecordSubscriptionOpened {
-            token: IntentRecordSubscriptionToken { identifier: 2 },
+        SpiritReply::RecordSubscriptionOpened(RecordSubscriptionOpened {
+            token: RecordSubscriptionToken { identifier: 2 },
             snapshot: vec![summary()],
         }),
-        SpiritReply::SpiritRequestUnimplemented(SpiritRequestUnimplemented {
-            operation: SpiritOperationKind::PsycheStatement,
-            reason: SpiritUnimplementedReason::NotBuiltYet,
+        SpiritReply::RequestUnimplemented(RequestUnimplemented {
+            operation: OperationKind::Statement,
+            reason: UnimplementedReason::NotBuiltYet,
         }),
     ];
 
@@ -193,8 +190,8 @@ fn spirit_replies_round_trip() {
 #[test]
 fn spirit_events_round_trip() {
     let events = [
-        SpiritEvent::PsycheStateChanged(PsycheStateChanged { state: state() }),
-        SpiritEvent::IntentRecordCaptured(IntentRecordCaptured { record: summary() }),
+        SpiritEvent::StateChanged(StateChanged { state: state() }),
+        SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }),
     ];
 
     for event in events {
@@ -220,50 +217,46 @@ fn spirit_events_round_trip() {
 fn spirit_request_variants_declare_expected_signal_root_verbs() {
     let cases = [
         (
-            SpiritRequest::PsycheStatement(PsycheStatement {
-                statement: PsycheStatementText::new("capture this intent"),
+            SpiritRequest::Statement(Statement {
+                statement: StatementText::new("capture this intent"),
             }),
             SignalVerb::Assert,
         ),
         (SpiritRequest::Entry(entry()), SignalVerb::Assert),
         (
-            SpiritRequest::PsycheStateObservation(PsycheStateObservation {}),
+            SpiritRequest::StateObservation(StateObservation {}),
             SignalVerb::Match,
         ),
         (
-            SpiritRequest::IntentRecordObservation(IntentRecordObservation {
-                query: IntentRecordQuery {
+            SpiritRequest::RecordObservation(RecordObservation {
+                query: RecordQuery {
                     topic: None,
-                    mode: IntentObservationMode::SummaryOnly,
+                    mode: ObservationMode::SummaryOnly,
                 },
             }),
             SignalVerb::Match,
         ),
         (
-            SpiritRequest::ClarificationQuestionPending(ClarificationQuestionPending {}),
+            SpiritRequest::QuestionPending(QuestionPending {}),
             SignalVerb::Match,
         ),
         (
-            SpiritRequest::SubscribePsycheState(PsycheStateSubscription {}),
+            SpiritRequest::SubscribeState(StateSubscription {}),
             SignalVerb::Subscribe,
         ),
         (
-            SpiritRequest::PsycheStateSubscriptionRetraction(PsycheStateSubscriptionToken {
-                identifier: 1,
-            }),
+            SpiritRequest::StateSubscriptionRetraction(StateSubscriptionToken { identifier: 1 }),
             SignalVerb::Retract,
         ),
         (
-            SpiritRequest::SubscribeIntentRecords(IntentRecordSubscription {
+            SpiritRequest::SubscribeRecords(RecordSubscription {
                 topic: None,
-                mode: IntentObservationMode::SummaryOnly,
+                mode: ObservationMode::SummaryOnly,
             }),
             SignalVerb::Subscribe,
         ),
         (
-            SpiritRequest::IntentRecordSubscriptionRetraction(IntentRecordSubscriptionToken {
-                identifier: 2,
-            }),
+            SpiritRequest::RecordSubscriptionRetraction(RecordSubscriptionToken { identifier: 2 }),
             SignalVerb::Retract,
         ),
     ];
@@ -276,67 +269,73 @@ fn spirit_request_variants_declare_expected_signal_root_verbs() {
 #[test]
 fn spirit_request_exposes_contract_owned_operation_kind() {
     assert_eq!(
-        SpiritRequest::PsycheStatement(PsycheStatement {
-            statement: PsycheStatementText::new("capture this intent"),
+        SpiritRequest::Statement(Statement {
+            statement: StatementText::new("capture this intent"),
         })
         .operation_kind(),
-        SpiritOperationKind::PsycheStatement
+        OperationKind::Statement
     );
     assert_eq!(
         SpiritRequest::Entry(entry()).operation_kind(),
-        SpiritOperationKind::Entry
+        OperationKind::Entry
     );
     assert_eq!(
-        SpiritRequest::SubscribeIntentRecords(IntentRecordSubscription {
+        SpiritRequest::SubscribeRecords(RecordSubscription {
             topic: None,
-            mode: IntentObservationMode::SummaryOnly,
+            mode: ObservationMode::SummaryOnly,
         })
         .operation_kind(),
-        SpiritOperationKind::SubscribeIntentRecords
+        OperationKind::SubscribeRecords
     );
 }
 
 #[test]
 fn spirit_stream_witnesses_are_emitted() {
     assert_eq!(
-        SpiritRequest::SubscribePsycheState(PsycheStateSubscription {}).opened_stream(),
-        Some(signal_persona_spirit::SpiritStreamKind::PsycheStateStream)
+        SpiritRequest::SubscribeState(StateSubscription {}).opened_stream(),
+        Some(signal_persona_spirit::SpiritStreamKind::StateStream)
     );
     assert_eq!(
-        SpiritEvent::IntentRecordCaptured(IntentRecordCaptured { record: summary() }).stream_kind(),
-        signal_persona_spirit::SpiritStreamKind::IntentRecordStream
+        SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }).stream_kind(),
+        signal_persona_spirit::SpiritStreamKind::RecordStream
     );
 }
 
 #[test]
 fn spirit_canonical_examples_round_trip() {
     round_trip_nota(
-        SpiritRequest::PsycheStatement(PsycheStatement {
-            statement: PsycheStatementText::new("capture this intent"),
+        SpiritRequest::Statement(Statement {
+            statement: StatementText::new("capture this intent"),
         }),
-        "(PsycheStatement \"capture this intent\")",
+        "(Statement \"capture this intent\")",
     );
     round_trip_nota(
         SpiritRequest::Entry(entry()),
-        "(Entry workspace Decision \"summary only\" \"current implementation context\" Maximum [(Verbatim \"2026-05-19T13:08:11Z\" \"first statement\") (Verbatim \"2026-05-19T13:12:00Z\" \"restated statement\")])",
+        "(Entry workspace Decision \"summary only\" \"current implementation context\" Maximum \"2026-05-19T13:08:11Z\" \"first statement\")",
     );
     round_trip_nota(
-        SpiritRequest::IntentRecordObservation(IntentRecordObservation {
-            query: IntentRecordQuery {
+        SpiritRequest::RecordObservation(RecordObservation {
+            query: RecordQuery {
                 topic: None,
-                mode: IntentObservationMode::SummaryOnly,
+                mode: ObservationMode::SummaryOnly,
             },
         }),
-        "(IntentRecordObservation (IntentRecordQuery None SummaryOnly))",
+        "(RecordObservation (RecordQuery None SummaryOnly))",
     );
     round_trip_nota(
-        SpiritReply::PsycheStatementAccepted(PsycheStatementAccepted {
+        SpiritReply::RecordAccepted(RecordAccepted {
             captured: summary(),
         }),
-        "(PsycheStatementAccepted (IntentRecordSummary record-one workspace Decision \"summary only\" Maximum))",
+        "(RecordAccepted (RecordSummary 1 workspace Decision \"summary only\" Maximum))",
     );
     round_trip_nota(
-        SpiritEvent::IntentRecordCaptured(IntentRecordCaptured { record: summary() }),
-        "(IntentRecordCaptured (IntentRecordSummary record-one workspace Decision \"summary only\" Maximum))",
+        SpiritReply::RecordProvenancesObserved(RecordProvenancesObserved {
+            records: vec![provenance()],
+        }),
+        "(RecordProvenancesObserved [(RecordProvenance (RecordSummary 1 workspace Decision \"summary only\" Maximum) \"current implementation context\" \"2026-05-19T13:08:11Z\" \"first statement\")])",
+    );
+    round_trip_nota(
+        SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }),
+        "(RecordCaptured (RecordSummary 1 workspace Decision \"summary only\" Maximum))",
     );
 }

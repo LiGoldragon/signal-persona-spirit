@@ -17,10 +17,11 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 
 ## Invariants
 
-- `PsycheStatement` is an `Assert`.
+- `Statement` is an `Assert`.
 - `Entry` is an `Assert` for agents submitting already typed intent.
-- `Entry.verbatim` is a `Vec<Verbatim>` so restatements are preserved
-  as timestamped psyche statements.
+- `Entry` is one top-level timestamped statement. Restatement is represented
+  by repeated `Entry` records, not by nesting vectors.
+- `RecordIdentifier` is output-only and minted by `persona-spirit`.
 - Query variants are `Match`.
 - Stream-open variants are `Subscribe` and carry explicit stream relations.
 - Stream-close variants are `Retract`.
