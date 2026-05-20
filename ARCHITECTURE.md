@@ -27,8 +27,8 @@ wire vocabulary         daemon executable      payloadless observation
 The ordinary contract uses contract-local verbs:
 - `State` (the psyche stating intent, payload `Quote` or
   `Statement`),
-- `Record` (an agent submitting a typed intent entry, payload
-  `Entry`),
+- `Record` (an agent submitting a typed intent entry without capture time,
+  payload `Entry`),
 - `Observe` (the read side — payload is a closed `Observation` enum
   naming `State`, `Records`, `QuestionsPending`, etc.),
 - `Watch` / `Unwatch` (domain-specific subscriptions — payload names
@@ -82,7 +82,7 @@ Sema observations rather than executable effect records.
 | Operation | Payload | Sema class (Layer 3 projection) |
 |---|---|---|
 | `State` | `Statement` | `Assert` |
-| `Record` | `Entry` | `Assert` |
+| `Record` | `Entry` without date/time | `Assert` |
 | `Observe` (state kind) | `Observation::State` unit variant | `Match` |
 | `Observe` (Records kind) | `Observation::Records` | `Match` |
 | `Observe` (questions kind) | `Observation::Questions` unit variant | `Match` |
@@ -104,8 +104,9 @@ label is computed at observation publish time inside the daemon.
 | Subscribe-shaped variants declare stream relations. | `signal_channel!` stream blocks bind subscribe/open/event/close. |
 | Retract-shaped close variants have typed close acknowledgements. | `SubscriptionRetracted` carries the typed `SubscriptionToken` sum and round-trips through RKYV and NOTA. |
 | Intent queries are summary-first unless a richer mode is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
-| Every entry is one top-level psyche statement. | `Entry` carries one bare `YYYY-MM-DD` date field, one bare `HH:MM:SS` time field, and one quote; repeated entries are the restatement signal. |
-| Spirit never accepts opaque epoch timestamps or parenthesized date/time records for psyche records. | `opaque_integer_timestamp_shape_is_rejected` fails the old single-`Timestamp(u64)` shape; `parenthesized_date_time_shape_is_rejected` fails the transitional `(year month day)` / `(hour minute second)` shape. |
+| Every submitted entry is one top-level psyche statement without client-provided capture time. | `Entry` carries topic, kind, summary, context, certainty, and quote; repeated entries are the restatement signal. |
+| Spirit never accepts client-provided timestamps on `Record` requests. | `record_request_with_client_timestamp_shape_is_rejected` and `record_request_with_parenthesized_client_date_time_shape_is_rejected` fail old timestamp-bearing input shapes. |
+| Capture time appears only in daemon-produced provenance. | `RecordProvenance` carries one bare `YYYY-MM-DD` date field and one bare `HH:MM:SS` time field. |
 | Record identifiers are output-only. | `RecordIdentifier` appears in summaries/provenance replies, not in `Entry`. |
 | Sema classification is daemon-side projection only; no executable Sema payloads appear on the wire. | `EffectEmitted` carries payloadless `SemaObservation` and daemon-side `ToSemaOperation` / `ToSemaOutcome` impls are the executable witnesses. |
 | This crate contains no runtime. | Source has no Kameo, Tokio, sockets, redb, or sema-engine code. |

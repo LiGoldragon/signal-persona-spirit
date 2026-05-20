@@ -242,8 +242,6 @@ pub struct Entry {
     pub summary: Summary,
     pub context: Context,
     pub certainty: Certainty,
-    pub date: Date,
-    pub time: Time,
     pub quote: Quote,
 }
 

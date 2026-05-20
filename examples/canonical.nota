@@ -1,5 +1,5 @@
 (State ("capture this intent"))
-(Record (workspace Decision "summary only" "current implementation context" Maximum 2026-05-20 14:30:00 "first statement"))
+(Record (workspace Decision "summary only" "current implementation context" Maximum "first statement"))
 (Observe State)
 (Observe (Records (None SummaryOnly)))
 (Observe (Records (None WithProvenance)))
