@@ -25,4 +25,4 @@
 (StateChanged ((Active "implementation")))
 (RecordCaptured ((1 workspace Decision "summary only" Maximum)))
 (OperationReceived (Record))
-(ObservationEmitted ((Assert Asserted)))
+(EffectEmitted ((Assert Asserted)))

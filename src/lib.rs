@@ -412,7 +412,7 @@ pub struct OperationReceived {
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct ObservationEmitted {
+pub struct EffectEmitted {
     pub observation: SemaObservation,
 }
 
@@ -452,7 +452,7 @@ signal_channel! {
         observable {
             filter default;
             operation_event OperationReceived;
-            effect_event ObservationEmitted;
+            effect_event EffectEmitted;
         }
 }
 

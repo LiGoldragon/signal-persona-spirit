@@ -73,9 +73,9 @@ uses the contract-local verbs listed below, while Sema appears only as
 daemon-side payloadless classification.
 
 The generic observable classification event record is now
-`ObservationEmitted`, matching the current architecture where generic
-observers see payloadless Sema observations rather than executable
-effect records.
+`EffectEmitted`, matching the current architecture where generic
+observers see the effect publication moment carrying payloadless
+Sema observations rather than executable effect records.
 
 ## Contract Surface
 
@@ -106,7 +106,7 @@ label is computed at observation publish time inside the daemon.
 | Intent queries are summary-first unless a richer mode is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
 | Every entry is one top-level psyche statement. | `Entry` carries one timestamp and one quote; repeated entries are the restatement signal. |
 | Record identifiers are output-only. | `RecordIdentifier` appears in summaries/provenance replies, not in `Entry`. |
-| Sema classification is daemon-side projection only; no executable Sema payloads appear on the wire. | `ObservationEmitted` carries payloadless `SemaObservation` and daemon-side `ToSemaOperation` / `ToSemaOutcome` impls are the executable witnesses. |
+| Sema classification is daemon-side projection only; no executable Sema payloads appear on the wire. | `EffectEmitted` carries payloadless `SemaObservation` and daemon-side `ToSemaOperation` / `ToSemaOutcome` impls are the executable witnesses. |
 | This crate contains no runtime. | Source has no Kameo, Tokio, sockets, redb, or sema-engine code. |
 
 ## Code Map

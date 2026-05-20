@@ -4,7 +4,7 @@ use signal_frame::{
     StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    Certainty, Context, Entry, FocusArea, Frame, FrameBody, Kind, Observation, ObservationEmitted,
+    Certainty, Context, EffectEmitted, Entry, FocusArea, Frame, FrameBody, Kind, Observation,
     ObservationMode, OperationKind, OperationReceived, Presence, QuestionIdentifier,
     QuestionPending, QuestionSummary, QuestionText, QuestionsObserved, Quote, RecordAccepted,
     RecordCaptured, RecordIdentifier, RecordProvenance, RecordProvenancesObserved, RecordQuery,
@@ -210,7 +210,7 @@ fn spirit_events_round_trip() {
         SpiritEvent::OperationReceived(OperationReceived {
             operation: OperationKind::Record,
         }),
-        SpiritEvent::ObservationEmitted(ObservationEmitted {
+        SpiritEvent::EffectEmitted(EffectEmitted {
             observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
         }),
     ];
@@ -285,7 +285,7 @@ fn spirit_observer_filter_routes_operation_and_effect_events() {
     let operation = OperationReceived {
         operation: OperationKind::Record,
     };
-    let effect = ObservationEmitted {
+    let effect = EffectEmitted {
         observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
     };
 
@@ -346,9 +346,9 @@ fn spirit_canonical_examples_round_trip() {
         "(RecordCaptured ((1 workspace Decision \"summary only\" Maximum)))",
     );
     round_trip_nota(
-        SpiritEvent::ObservationEmitted(ObservationEmitted {
+        SpiritEvent::EffectEmitted(EffectEmitted {
             observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
         }),
-        "(ObservationEmitted ((Assert Asserted)))",
+        "(EffectEmitted ((Assert Asserted)))",
     );
 }
