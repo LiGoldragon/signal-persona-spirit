@@ -41,7 +41,7 @@ fn provenance() -> RecordProvenance {
     RecordProvenance {
         summary: summary(),
         context: Context::new("current implementation context"),
-        timestamp: Timestamp::new("2026-05-19T13:08:11Z"),
+        timestamp: Timestamp::new(1_779_000_000),
         quote: Quote::new("first statement"),
     }
 }
@@ -53,7 +53,7 @@ fn entry() -> Entry {
         summary: Summary::new("summary only"),
         context: Context::new("current implementation context"),
         certainty: Certainty::Maximum,
-        timestamp: Timestamp::new("2026-05-19T13:08:11Z"),
+        timestamp: Timestamp::new(1_779_000_000),
         quote: Quote::new("first statement"),
     }
 }
@@ -298,7 +298,7 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         SpiritRequest::Record(entry()),
-        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum \"2026-05-19T13:08:11Z\" \"first statement\"))",
+        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum 1779000000 \"first statement\"))",
     );
     round_trip_nota(
         SpiritRequest::Observe(Observation::Records(RecordQuery {
@@ -330,7 +330,7 @@ fn spirit_canonical_examples_round_trip() {
         SpiritReply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
         }),
-        "(RecordProvenancesObserved ([((1 workspace Decision \"summary only\" Maximum) \"current implementation context\" \"2026-05-19T13:08:11Z\" \"first statement\")]))",
+        "(RecordProvenancesObserved ([((1 workspace Decision \"summary only\" Maximum) \"current implementation context\" 1779000000 \"first statement\")]))",
     );
     round_trip_nota(
         SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }),

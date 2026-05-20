@@ -112,15 +112,15 @@ impl Context {
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
 )]
-pub struct Timestamp(String);
+pub struct Timestamp(u64);
 
 impl Timestamp {
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
+    pub const fn new(value: u64) -> Self {
+        Self(value)
     }
 
-    pub fn as_str(&self) -> &str {
-        &self.0
+    pub const fn seconds(self) -> u64 {
+        self.0
     }
 }
 
