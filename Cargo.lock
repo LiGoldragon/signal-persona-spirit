@@ -252,20 +252,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 
 [[package]]
-name = "signal-core"
+name = "signal-frame"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/signal-core.git#5762bba19a118cedc9fc7edcb1237f9a53d444aa"
+source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#381e083be601e1f951859fb2b0849c48eafa5b7f"
 dependencies = [
  "nota-codec",
  "rkyv",
- "signal-core-macros",
+ "signal-frame-macros",
  "thiserror",
 ]
 
 [[package]]
-name = "signal-core-macros"
+name = "signal-frame-macros"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/signal-core.git#5762bba19a118cedc9fc7edcb1237f9a53d444aa"
+source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#381e083be601e1f951859fb2b0849c48eafa5b7f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -278,7 +278,18 @@ version = "0.1.0"
 dependencies = [
  "nota-codec",
  "rkyv",
- "signal-core",
+ "signal-frame",
+ "signal-sema",
+ "thiserror",
+]
+
+[[package]]
+name = "signal-sema"
+version = "0.1.0"
+source = "git+https://github.com/LiGoldragon/signal-sema.git?branch=main#f141791060997df37d8602b7187ca334bdcdc440"
+dependencies = [
+ "nota-codec",
+ "rkyv",
  "thiserror",
 ]
 

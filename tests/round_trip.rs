@@ -1,19 +1,21 @@
 use nota_codec::{Decoder, Encoder, NotaDecode, NotaEncode};
-use signal_core::{
+use signal_frame::{
     ExchangeIdentifier, ExchangeLane, LaneSequence, NonEmpty, Reply, RequestPayload, SessionEpoch,
-    SignalVerb, StreamEventIdentifier, SubReply, SubscriptionTokenInner,
+    StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    Certainty, Context, Entry, FocusArea, Frame, FrameBody, Kind, ObservationMode, OperationKind,
-    Presence, QuestionIdentifier, QuestionPending, QuestionSummary, QuestionText,
-    QuestionsObserved, Quote, RecordAccepted, RecordCaptured, RecordIdentifier, RecordObservation,
-    RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
+    Certainty, Context, Entry, FocusArea, Frame, FrameBody, Kind, Observation, ObservationMode,
+    OperationKind, OperationReceived, Presence, QuestionIdentifier, QuestionPending,
+    QuestionSummary, QuestionText, QuestionsObserved, Quote, RecordAccepted, RecordCaptured,
+    RecordIdentifier, RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
     RecordSubscriptionOpened, RecordSubscriptionRetracted, RecordSubscriptionToken,
-    RecordsObserved, RequestUnimplemented, SpiritEvent, SpiritReply, SpiritRequest, State,
+    RecordsObserved, RequestUnimplemented, SemaEffectEmitted, SpiritEvent, SpiritObserverFilter,
+    SpiritObserverFilterMatch, SpiritObserverSubscriptionToken, SpiritReply, SpiritRequest, State,
     StateChanged, StateObservation, StateObserved, StateSubscription, StateSubscriptionOpened,
-    StateSubscriptionRetracted, StateSubscriptionToken, Statement, StatementText, Summary,
-    Timestamp, Topic, UnimplementedReason,
+    StateSubscriptionRetracted, StateSubscriptionToken, Statement, StatementText, Subscription,
+    SubscriptionSnapshot, SubscriptionToken, Summary, Timestamp, Topic, UnimplementedReason,
 };
+use signal_sema::SemaOperation;
 
 const CANONICAL: &str = include_str!("../examples/canonical.nota");
 
@@ -64,19 +66,14 @@ fn state() -> State {
 }
 
 fn round_trip_request(request: SpiritRequest) -> SpiritRequest {
-    let expected_verb = request.signal_verb();
     let frame = Frame::new(FrameBody::Request {
         exchange: exchange(),
-        request: request.into_request(),
+        request: request.clone().into_request(),
     });
     let bytes = frame.encode_length_prefixed().expect("encode");
     let decoded = Frame::decode_length_prefixed(&bytes).expect("decode");
     match decoded.into_body() {
-        FrameBody::Request { request, .. } => {
-            let operation = request.operations().head();
-            assert_eq!(operation.verb, expected_verb);
-            operation.payload.clone()
-        }
+        FrameBody::Request { request, .. } => request.payloads().head().clone(),
         other => panic!("expected request operation, got {other:?}"),
     }
 }
@@ -84,17 +81,14 @@ fn round_trip_request(request: SpiritRequest) -> SpiritRequest {
 fn round_trip_reply(reply: SpiritReply) -> SpiritReply {
     let frame = Frame::new(FrameBody::Reply {
         exchange: exchange(),
-        reply: Reply::completed(NonEmpty::single(SubReply::Ok {
-            verb: SignalVerb::Assert,
-            payload: reply,
-        })),
+        reply: Reply::committed(NonEmpty::single(SubReply::Ok(reply))),
     });
     let bytes = frame.encode_length_prefixed().expect("encode");
     let decoded = Frame::decode_length_prefixed(&bytes).expect("decode");
     match decoded.into_body() {
         FrameBody::Reply { reply, .. } => match reply {
             Reply::Accepted { per_operation, .. } => match per_operation.into_head() {
-                SubReply::Ok { payload, .. } => payload,
+                SubReply::Ok(payload) => payload,
                 other => panic!("expected accepted reply payload, got {other:?}"),
             },
             other => panic!("expected accepted reply, got {other:?}"),
@@ -124,25 +118,31 @@ where
 #[test]
 fn spirit_requests_round_trip() {
     let requests = [
-        SpiritRequest::Statement(Statement {
+        SpiritRequest::State(Statement {
             statement: StatementText::new("capture this intent"),
         }),
-        SpiritRequest::Entry(entry()),
-        SpiritRequest::StateObservation(StateObservation {}),
-        SpiritRequest::RecordObservation(RecordObservation {
-            query: RecordQuery {
-                topic: None,
-                mode: ObservationMode::SummaryOnly,
-            },
-        }),
-        SpiritRequest::QuestionPending(QuestionPending {}),
-        SpiritRequest::SubscribeState(StateSubscription {}),
-        SpiritRequest::StateSubscriptionRetraction(StateSubscriptionToken { identifier: 1 }),
-        SpiritRequest::SubscribeRecords(RecordSubscription {
+        SpiritRequest::Record(entry()),
+        SpiritRequest::Observe(Observation::State(StateObservation {})),
+        SpiritRequest::Observe(Observation::Records(RecordQuery {
             topic: None,
             mode: ObservationMode::SummaryOnly,
-        }),
-        SpiritRequest::RecordSubscriptionRetraction(RecordSubscriptionToken { identifier: 2 }),
+        })),
+        SpiritRequest::Observe(Observation::Questions(QuestionPending {})),
+        SpiritRequest::Watch(Subscription::State(StateSubscription {})),
+        SpiritRequest::Watch(Subscription::Records(RecordSubscription {
+            topic: None,
+            mode: ObservationMode::SummaryOnly,
+        })),
+        SpiritRequest::Unwatch(SubscriptionToken::State(StateSubscriptionToken {
+            identifier: 1,
+        })),
+        SpiritRequest::Unwatch(SubscriptionToken::Records(RecordSubscriptionToken {
+            identifier: 2,
+        })),
+        SpiritRequest::Tap(SpiritObserverFilter::OperationsOnly),
+        SpiritRequest::Untap(SpiritObserverSubscriptionToken::new(
+            SubscriptionTokenInner::new(3),
+        )),
     ];
 
     for request in requests {
@@ -177,14 +177,21 @@ fn spirit_replies_round_trip() {
             token: RecordSubscriptionToken { identifier: 2 },
             snapshot: vec![summary()],
         }),
+        SpiritReply::SubscriptionOpened(signal_persona_spirit::SubscriptionOpened {
+            token: SubscriptionToken::State(StateSubscriptionToken { identifier: 1 }),
+            snapshot: SubscriptionSnapshot::State(state()),
+        }),
         SpiritReply::StateSubscriptionRetracted(StateSubscriptionRetracted {
             token: StateSubscriptionToken { identifier: 1 },
         }),
         SpiritReply::RecordSubscriptionRetracted(RecordSubscriptionRetracted {
             token: RecordSubscriptionToken { identifier: 2 },
         }),
+        SpiritReply::SubscriptionRetracted(signal_persona_spirit::SubscriptionRetracted {
+            token: SubscriptionToken::Records(RecordSubscriptionToken { identifier: 2 }),
+        }),
         SpiritReply::RequestUnimplemented(RequestUnimplemented {
-            operation: OperationKind::Statement,
+            operation: OperationKind::State,
             reason: UnimplementedReason::NotBuiltYet,
         }),
     ];
@@ -199,10 +206,16 @@ fn spirit_events_round_trip() {
     let events = [
         SpiritEvent::StateChanged(StateChanged { state: state() }),
         SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }),
+        SpiritEvent::OperationReceived(OperationReceived {
+            operation: OperationKind::Record,
+        }),
+        SpiritEvent::SemaEffectEmitted(SemaEffectEmitted {
+            operation: SemaOperation::Assert,
+        }),
     ];
 
     for event in events {
-        let frame = Frame::new(FrameBody::SubscriptionEvent {
+        let frame = Frame::new(StreamingFrameBody::SubscriptionEvent {
             event_identifier: StreamEventIdentifier::new(
                 SessionEpoch::new(1),
                 ExchangeLane::Acceptor,
@@ -221,123 +234,99 @@ fn spirit_events_round_trip() {
 }
 
 #[test]
-fn spirit_request_variants_declare_expected_signal_root_verbs() {
-    let cases = [
-        (
-            SpiritRequest::Statement(Statement {
-                statement: StatementText::new("capture this intent"),
-            }),
-            SignalVerb::Assert,
-        ),
-        (SpiritRequest::Entry(entry()), SignalVerb::Assert),
-        (
-            SpiritRequest::StateObservation(StateObservation {}),
-            SignalVerb::Match,
-        ),
-        (
-            SpiritRequest::RecordObservation(RecordObservation {
-                query: RecordQuery {
-                    topic: None,
-                    mode: ObservationMode::SummaryOnly,
-                },
-            }),
-            SignalVerb::Match,
-        ),
-        (
-            SpiritRequest::QuestionPending(QuestionPending {}),
-            SignalVerb::Match,
-        ),
-        (
-            SpiritRequest::SubscribeState(StateSubscription {}),
-            SignalVerb::Subscribe,
-        ),
-        (
-            SpiritRequest::StateSubscriptionRetraction(StateSubscriptionToken { identifier: 1 }),
-            SignalVerb::Retract,
-        ),
-        (
-            SpiritRequest::SubscribeRecords(RecordSubscription {
-                topic: None,
-                mode: ObservationMode::SummaryOnly,
-            }),
-            SignalVerb::Subscribe,
-        ),
-        (
-            SpiritRequest::RecordSubscriptionRetraction(RecordSubscriptionToken { identifier: 2 }),
-            SignalVerb::Retract,
-        ),
-    ];
-
-    for (request, verb) in cases {
-        assert_eq!(request.signal_verb(), verb);
-    }
-}
-
-#[test]
 fn spirit_request_exposes_contract_owned_operation_kind() {
     assert_eq!(
-        SpiritRequest::Statement(Statement {
+        SpiritRequest::State(Statement {
             statement: StatementText::new("capture this intent"),
         })
         .operation_kind(),
-        OperationKind::Statement
+        OperationKind::State
     );
     assert_eq!(
-        SpiritRequest::Entry(entry()).operation_kind(),
-        OperationKind::Entry
+        SpiritRequest::Record(entry()).operation_kind(),
+        OperationKind::Record
     );
     assert_eq!(
-        SpiritRequest::SubscribeRecords(RecordSubscription {
+        SpiritRequest::Watch(Subscription::Records(RecordSubscription {
             topic: None,
             mode: ObservationMode::SummaryOnly,
-        })
+        }))
         .operation_kind(),
-        OperationKind::SubscribeRecords
+        OperationKind::Watch
     );
 }
 
 #[test]
 fn spirit_stream_witnesses_are_emitted() {
     assert_eq!(
-        SpiritRequest::SubscribeState(StateSubscription {}).opened_stream(),
-        Some(signal_persona_spirit::SpiritStreamKind::StateStream)
+        SpiritRequest::Watch(Subscription::State(StateSubscription {})).opened_stream(),
+        Some(signal_persona_spirit::SpiritStreamKind::DomainStream)
     );
     assert_eq!(
         SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }).stream_kind(),
-        signal_persona_spirit::SpiritStreamKind::RecordStream
+        signal_persona_spirit::SpiritStreamKind::DomainStream
     );
     assert_eq!(
-        SpiritRequest::StateSubscriptionRetraction(StateSubscriptionToken { identifier: 1 })
-            .closed_stream(),
-        Some(signal_persona_spirit::SpiritStreamKind::StateStream)
+        SpiritRequest::Unwatch(SubscriptionToken::State(StateSubscriptionToken {
+            identifier: 1
+        }))
+        .closed_stream(),
+        Some(signal_persona_spirit::SpiritStreamKind::DomainStream)
     );
     assert_eq!(
-        SpiritRequest::RecordSubscriptionRetraction(RecordSubscriptionToken { identifier: 2 })
-            .closed_stream(),
-        Some(signal_persona_spirit::SpiritStreamKind::RecordStream)
+        SpiritRequest::Tap(SpiritObserverFilter::All).opened_stream(),
+        Some(signal_persona_spirit::SpiritStreamKind::ObserverStream)
     );
+}
+
+#[test]
+fn spirit_observer_filter_routes_operation_and_effect_events() {
+    let operation = OperationReceived {
+        operation: OperationKind::Record,
+    };
+    let effect = SemaEffectEmitted {
+        operation: SemaOperation::Assert,
+    };
+
+    assert!(SpiritObserverFilter::All.matches_operation_received(&operation));
+    assert!(SpiritObserverFilter::All.matches_effect_emitted(&effect));
+    assert!(SpiritObserverFilter::OperationsOnly.matches_operation_received(&operation));
+    assert!(!SpiritObserverFilter::OperationsOnly.matches_effect_emitted(&effect));
+    assert!(!SpiritObserverFilter::EffectsOnly.matches_operation_received(&operation));
+    assert!(SpiritObserverFilter::EffectsOnly.matches_effect_emitted(&effect));
 }
 
 #[test]
 fn spirit_canonical_examples_round_trip() {
     round_trip_nota(
-        SpiritRequest::Statement(Statement {
+        SpiritRequest::State(Statement {
             statement: StatementText::new("capture this intent"),
         }),
-        "(Statement (\"capture this intent\"))",
+        "(State (\"capture this intent\"))",
     );
     round_trip_nota(
-        SpiritRequest::Entry(entry()),
-        "(Entry (workspace Decision \"summary only\" \"current implementation context\" Maximum \"2026-05-19T13:08:11Z\" \"first statement\"))",
+        SpiritRequest::Record(entry()),
+        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum \"2026-05-19T13:08:11Z\" \"first statement\"))",
     );
     round_trip_nota(
-        SpiritRequest::RecordObservation(RecordObservation {
-            query: RecordQuery {
-                topic: None,
-                mode: ObservationMode::SummaryOnly,
-            },
-        }),
-        "(RecordObservation ((None SummaryOnly)))",
+        SpiritRequest::Observe(Observation::Records(RecordQuery {
+            topic: None,
+            mode: ObservationMode::SummaryOnly,
+        })),
+        "(Observe (Records (None SummaryOnly)))",
+    );
+    round_trip_nota(
+        SpiritRequest::Watch(Subscription::Records(RecordSubscription {
+            topic: None,
+            mode: ObservationMode::SummaryOnly,
+        })),
+        "(Watch (Records (None SummaryOnly)))",
+    );
+    round_trip_nota(
+        SpiritRequest::Unwatch(SubscriptionToken::Records(RecordSubscriptionToken {
+            identifier: 2,
+        })),
+        "(Unwatch (Records (2)))",
     );
     round_trip_nota(
         SpiritReply::RecordAccepted(RecordAccepted {
@@ -356,15 +345,9 @@ fn spirit_canonical_examples_round_trip() {
         "(RecordCaptured ((1 workspace Decision \"summary only\" Maximum)))",
     );
     round_trip_nota(
-        SpiritReply::StateSubscriptionRetracted(StateSubscriptionRetracted {
-            token: StateSubscriptionToken { identifier: 1 },
+        SpiritEvent::SemaEffectEmitted(SemaEffectEmitted {
+            operation: SemaOperation::Assert,
         }),
-        "(StateSubscriptionRetracted ((1)))",
-    );
-    round_trip_nota(
-        SpiritReply::RecordSubscriptionRetracted(RecordSubscriptionRetracted {
-            token: RecordSubscriptionToken { identifier: 2 },
-        }),
-        "(RecordSubscriptionRetracted ((2)))",
+        "(SemaEffectEmitted (Assert))",
     );
 }

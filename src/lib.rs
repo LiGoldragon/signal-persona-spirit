@@ -5,9 +5,10 @@
 //! Runtime actors, sockets, storage, classifier logic, and downstream
 //! owner-Mutate forwarding live in `persona-spirit`.
 
-use nota_codec::{NotaEnum, NotaRecord, NotaTransparent};
+use nota_codec::{NotaEnum, NotaRecord, NotaSum, NotaTransparent};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
-use signal_core::signal_channel;
+use signal_frame::signal_channel;
+use signal_sema::SemaOperation;
 
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
@@ -332,19 +333,53 @@ pub struct RecordSubscriptionRetracted {
     pub token: RecordSubscriptionToken,
 }
 
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaSum, Debug, Clone, PartialEq, Eq)]
+pub enum Observation {
+    State(StateObservation),
+    Records(RecordQuery),
+    Questions(QuestionPending),
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaSum, Debug, Clone, PartialEq, Eq)]
+pub enum Subscription {
+    State(StateSubscription),
+    Records(RecordSubscription),
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaSum, Debug, Clone, PartialEq, Eq)]
+pub enum SubscriptionToken {
+    State(StateSubscriptionToken),
+    Records(RecordSubscriptionToken),
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaSum, Debug, Clone, PartialEq, Eq)]
+pub enum SubscriptionSnapshot {
+    State(State),
+    Records(Vec<RecordSummary>),
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct SubscriptionOpened {
+    pub token: SubscriptionToken,
+    pub snapshot: SubscriptionSnapshot,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct SubscriptionRetracted {
+    pub token: SubscriptionToken,
+}
+
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
 )]
 pub enum OperationKind {
-    Statement,
-    Entry,
-    StateObservation,
-    RecordObservation,
-    QuestionPending,
-    SubscribeState,
-    StateSubscriptionRetraction,
-    SubscribeRecords,
-    RecordSubscriptionRetraction,
+    State,
+    Record,
+    Observe,
+    Watch,
+    Unwatch,
+    Tap,
+    Untap,
 }
 
 #[derive(
@@ -371,19 +406,24 @@ pub struct RecordCaptured {
     pub record: RecordSummary,
 }
 
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct OperationReceived {
+    pub operation: OperationKind,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct SemaEffectEmitted {
+    pub operation: SemaOperation,
+}
+
 signal_channel! {
     channel Spirit {
-        request SpiritRequest {
-            Assert Statement(Statement),
-            Assert Entry(Entry),
-            Match StateObservation(StateObservation),
-            Match RecordObservation(RecordObservation),
-            Match QuestionPending(QuestionPending),
-            Subscribe SubscribeState(StateSubscription) opens StateStream,
-            Retract StateSubscriptionRetraction(StateSubscriptionToken),
-            Subscribe SubscribeRecords(RecordSubscription) opens RecordStream,
-            Retract RecordSubscriptionRetraction(RecordSubscriptionToken),
-        }
+        operation State(Statement),
+        operation Record(Entry),
+        operation Observe(Observation),
+        operation Watch(Subscription) opens DomainStream,
+        operation Unwatch(SubscriptionToken),
+    }
         reply SpiritReply {
             RecordAccepted(RecordAccepted),
             StateObserved(StateObserved),
@@ -392,27 +432,28 @@ signal_channel! {
             QuestionsObserved(QuestionsObserved),
             StateSubscriptionOpened(StateSubscriptionOpened),
             RecordSubscriptionOpened(RecordSubscriptionOpened),
+            SubscriptionOpened(SubscriptionOpened),
             StateSubscriptionRetracted(StateSubscriptionRetracted),
             RecordSubscriptionRetracted(RecordSubscriptionRetracted),
+            SubscriptionRetracted(SubscriptionRetracted),
             RequestUnimplemented(RequestUnimplemented),
         }
         event SpiritEvent {
-            StateChanged(StateChanged) belongs StateStream,
-            RecordCaptured(RecordCaptured) belongs RecordStream,
+            StateChanged(StateChanged) belongs DomainStream,
+            RecordCaptured(RecordCaptured) belongs DomainStream,
         }
-        stream StateStream {
-            token StateSubscriptionToken;
-            opened StateSubscriptionOpened;
+        stream DomainStream {
+            token SubscriptionToken;
+            opened SubscriptionOpened;
             event StateChanged;
-            close StateSubscriptionRetraction;
-        }
-        stream RecordStream {
-            token RecordSubscriptionToken;
-            opened RecordSubscriptionOpened;
             event RecordCaptured;
-            close RecordSubscriptionRetraction;
+            close Unwatch;
         }
-    }
+        observable {
+            filter default;
+            operation_event OperationReceived;
+            effect_event SemaEffectEmitted;
+        }
 }
 
 pub type Frame = SpiritFrame;
@@ -420,19 +461,18 @@ pub type FrameBody = SpiritFrameBody;
 pub type ChannelRequest = SpiritChannelRequest;
 pub type ChannelReply = SpiritChannelReply;
 pub type RequestBuilder = SpiritRequestBuilder;
+pub type SpiritRequest = SpiritOperation;
 
 impl SpiritRequest {
     pub fn operation_kind(&self) -> OperationKind {
         match self {
-            Self::Statement(_) => OperationKind::Statement,
-            Self::Entry(_) => OperationKind::Entry,
-            Self::StateObservation(_) => OperationKind::StateObservation,
-            Self::RecordObservation(_) => OperationKind::RecordObservation,
-            Self::QuestionPending(_) => OperationKind::QuestionPending,
-            Self::SubscribeState(_) => OperationKind::SubscribeState,
-            Self::StateSubscriptionRetraction(_) => OperationKind::StateSubscriptionRetraction,
-            Self::SubscribeRecords(_) => OperationKind::SubscribeRecords,
-            Self::RecordSubscriptionRetraction(_) => OperationKind::RecordSubscriptionRetraction,
+            Self::State(_) => OperationKind::State,
+            Self::Record(_) => OperationKind::Record,
+            Self::Observe(_) => OperationKind::Observe,
+            Self::Watch(_) => OperationKind::Watch,
+            Self::Unwatch(_) => OperationKind::Unwatch,
+            Self::Tap(_) => OperationKind::Tap,
+            Self::Untap(_) => OperationKind::Untap,
         }
     }
 }
@@ -479,6 +519,12 @@ impl From<RecordSubscriptionOpened> for SpiritReply {
     }
 }
 
+impl From<SubscriptionOpened> for SpiritReply {
+    fn from(payload: SubscriptionOpened) -> Self {
+        Self::SubscriptionOpened(payload)
+    }
+}
+
 impl From<StateSubscriptionRetracted> for SpiritReply {
     fn from(payload: StateSubscriptionRetracted) -> Self {
         Self::StateSubscriptionRetracted(payload)
@@ -488,6 +534,12 @@ impl From<StateSubscriptionRetracted> for SpiritReply {
 impl From<RecordSubscriptionRetracted> for SpiritReply {
     fn from(payload: RecordSubscriptionRetracted) -> Self {
         Self::RecordSubscriptionRetracted(payload)
+    }
+}
+
+impl From<SubscriptionRetracted> for SpiritReply {
+    fn from(payload: SubscriptionRetracted) -> Self {
+        Self::SubscriptionRetracted(payload)
     }
 }
 
