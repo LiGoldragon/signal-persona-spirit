@@ -17,12 +17,26 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 
 ## Invariants
 
-- `Statement` is an `Assert`.
-- `Entry` is an `Assert` for agents submitting already typed intent.
-- `Entry` is one top-level timestamped statement. Restatement is represented
-  by repeated `Entry` records, not by nesting vectors.
+- Under the three-layer model (per
+  `~/primary/skills/component-triad.md` §"Verbs come in three layers"):
+  - The wire carries contract-local verbs in verb form (`State`,
+    `Record`, `Observe`, `Watch`, `Unwatch`, plus mandatory `Tap` /
+    `Untap`).
+  - The daemon owns typed Component Commands that lower contract
+    operations to executable form.
+  - Each Command projects to a payloadless Sema class label via
+    `ToSemaOperation` for cross-component observation.
+- `State` projects to Sema `Assert` at the daemon.
+- `Record` projects to Sema `Assert` at the daemon.
+- `Entry` is one top-level timestamped statement. Restatement is
+  represented by repeated `Entry` records, not by nesting vectors.
 - `RecordIdentifier` is output-only and minted by `persona-spirit`.
-- Query variants are `Match`.
-- Stream-open variants are `Subscribe` and carry explicit stream relations.
-- Stream-close variants are `Retract`.
-- Intent observation is summary-first unless the caller asks for provenance.
+- `Observe`-shaped operations project to Sema `Match`.
+- Stream-open variants (domain `Watch` and mandatory `Tap`) project
+  to Sema `Subscribe` and carry explicit stream relations.
+- Stream-close variants (domain `Unwatch` and mandatory `Untap`)
+  project to Sema `Retract`.
+- Intent observation is summary-first unless the caller asks for
+  provenance.
+- Mandatory `Tap`/`Untap` observability surface is part of the
+  contract per persona-component discipline.
