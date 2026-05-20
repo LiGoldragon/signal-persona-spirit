@@ -5,7 +5,7 @@
 //! Runtime actors, sockets, storage, classifier logic, and downstream
 //! owner-Mutate forwarding live in `persona-spirit`.
 
-use nota_codec::{NotaEnum, NotaRecord, NotaTransparent};
+use nota_codec::{Decoder, Encoder, NotaDecode, NotaEncode, NotaEnum, NotaRecord, NotaTransparent};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use signal_frame::signal_channel;
 use signal_sema::SemaObservation;
@@ -109,9 +109,7 @@ impl Context {
     }
 }
 
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq, Hash,
-)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Date {
     pub year: u16,
     pub month: u8,
@@ -124,9 +122,20 @@ impl Date {
     }
 }
 
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq, Hash,
-)]
+impl NotaEncode for Date {
+    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
+        encoder.write_date(self.year, self.month, self.day)
+    }
+}
+
+impl NotaDecode for Date {
+    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
+        let (year, month, day) = decoder.read_date()?;
+        Ok(Self { year, month, day })
+    }
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Time {
     pub hour: u8,
     pub minute: u8,
@@ -140,6 +149,23 @@ impl Time {
             minute,
             second,
         }
+    }
+}
+
+impl NotaEncode for Time {
+    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
+        encoder.write_time(self.hour, self.minute, self.second)
+    }
+}
+
+impl NotaDecode for Time {
+    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
+        let (hour, minute, second) = decoder.read_time()?;
+        Ok(Self {
+            hour,
+            minute,
+            second,
+        })
     }
 }
 

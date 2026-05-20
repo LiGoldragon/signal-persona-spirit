@@ -299,7 +299,7 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         SpiritRequest::Record(entry()),
-        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum (2026 5 20) (14 30 0) \"first statement\"))",
+        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum 2026-05-20 14:30:00 \"first statement\"))",
     );
     round_trip_nota(
         SpiritRequest::Observe(Observation::State),
@@ -340,7 +340,7 @@ fn spirit_canonical_examples_round_trip() {
         SpiritReply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
         }),
-        "(RecordProvenancesObserved ([((1 workspace Decision \"summary only\" Maximum) \"current implementation context\" (2026 5 20) (14 30 0) \"first statement\")]))",
+        "(RecordProvenancesObserved ([((1 workspace Decision \"summary only\" Maximum) \"current implementation context\" 2026-05-20 14:30:00 \"first statement\")]))",
     );
     round_trip_nota(
         SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }),
@@ -361,7 +361,20 @@ fn opaque_integer_timestamp_shape_is_rejected() {
     );
     let error = SpiritRequest::decode(&mut decoder).expect_err("opaque timestamp must not decode");
     assert!(
-        error.to_string().contains("opening a record"),
+        error.to_string().contains("date literal"),
         "old integer timestamp shape should fail at the typed Date field, got {error:?}"
+    );
+}
+
+#[test]
+fn parenthesized_date_time_shape_is_rejected() {
+    let mut decoder = Decoder::new(
+        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum (2026 5 20) (14 30 0) \"first statement\"))",
+    );
+    let error =
+        SpiritRequest::decode(&mut decoder).expect_err("parenthesized date/time must not decode");
+    assert!(
+        error.to_string().contains("date literal"),
+        "legacy parenthesized date/time shape should fail at the typed Date field, got {error:?}"
     );
 }

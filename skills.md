@@ -28,9 +28,9 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
     `ToSemaOperation` for cross-component observation.
 - `State` projects to Sema `Assert` at the daemon.
 - `Record` projects to Sema `Assert` at the daemon.
-- `Entry` is one top-level statement with separate `date` and `time`
-  fields. Restatement is represented by repeated `Entry` records, not by
-  nesting vectors.
+- `Entry` is one top-level statement with a bare `YYYY-MM-DD` date field
+  and a bare `HH:MM:SS` time field. Restatement is represented by
+  repeated `Entry` records, not by nesting vectors.
 - `RecordIdentifier` is output-only and minted by `persona-spirit`.
 - `Observe`-shaped operations project to Sema `Match`.
 - Stream-open variants (domain `Watch` and mandatory `Tap`) project

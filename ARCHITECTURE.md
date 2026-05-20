@@ -104,8 +104,8 @@ label is computed at observation publish time inside the daemon.
 | Subscribe-shaped variants declare stream relations. | `signal_channel!` stream blocks bind subscribe/open/event/close. |
 | Retract-shaped close variants have typed close acknowledgements. | `SubscriptionRetracted` carries the typed `SubscriptionToken` sum and round-trips through RKYV and NOTA. |
 | Intent queries are summary-first unless a richer mode is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
-| Every entry is one top-level psyche statement. | `Entry` carries one `date` field, one `time` field, and one quote; repeated entries are the restatement signal. |
-| Spirit never accepts opaque epoch timestamps for psyche records. | `opaque_integer_timestamp_shape_is_rejected` fails the old single-`Timestamp(u64)` shape. |
+| Every entry is one top-level psyche statement. | `Entry` carries one bare `YYYY-MM-DD` date field, one bare `HH:MM:SS` time field, and one quote; repeated entries are the restatement signal. |
+| Spirit never accepts opaque epoch timestamps or parenthesized date/time records for psyche records. | `opaque_integer_timestamp_shape_is_rejected` fails the old single-`Timestamp(u64)` shape; `parenthesized_date_time_shape_is_rejected` fails the transitional `(year month day)` / `(hour minute second)` shape. |
 | Record identifiers are output-only. | `RecordIdentifier` appears in summaries/provenance replies, not in `Entry`. |
 | Sema classification is daemon-side projection only; no executable Sema payloads appear on the wire. | `EffectEmitted` carries payloadless `SemaObservation` and daemon-side `ToSemaOperation` / `ToSemaOutcome` impls are the executable witnesses. |
 | This crate contains no runtime. | Source has no Kameo, Tokio, sockets, redb, or sema-engine code. |
