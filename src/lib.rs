@@ -187,7 +187,7 @@ pub enum Presence {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct Statement {
-    pub statement: StatementText,
+    pub text: StatementText,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -311,28 +311,6 @@ pub struct QuestionsObserved {
     pub questions: Vec<QuestionSummary>,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct StateSubscriptionOpened {
-    pub token: StateSubscriptionToken,
-    pub snapshot: State,
-}
-
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct RecordSubscriptionOpened {
-    pub token: RecordSubscriptionToken,
-    pub snapshot: Vec<RecordSummary>,
-}
-
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct StateSubscriptionRetracted {
-    pub token: StateSubscriptionToken,
-}
-
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct RecordSubscriptionRetracted {
-    pub token: RecordSubscriptionToken,
-}
-
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaSum, Debug, Clone, PartialEq, Eq)]
 pub enum Observation {
     State(StateObservation),
@@ -392,7 +370,6 @@ pub enum UnimplementedReason {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RequestUnimplemented {
-    pub operation: OperationKind,
     pub reason: UnimplementedReason,
 }
 
@@ -430,11 +407,7 @@ signal_channel! {
             RecordsObserved(RecordsObserved),
             RecordProvenancesObserved(RecordProvenancesObserved),
             QuestionsObserved(QuestionsObserved),
-            StateSubscriptionOpened(StateSubscriptionOpened),
-            RecordSubscriptionOpened(RecordSubscriptionOpened),
             SubscriptionOpened(SubscriptionOpened),
-            StateSubscriptionRetracted(StateSubscriptionRetracted),
-            RecordSubscriptionRetracted(RecordSubscriptionRetracted),
             SubscriptionRetracted(SubscriptionRetracted),
             RequestUnimplemented(RequestUnimplemented),
         }
@@ -507,33 +480,9 @@ impl From<QuestionsObserved> for SpiritReply {
     }
 }
 
-impl From<StateSubscriptionOpened> for SpiritReply {
-    fn from(payload: StateSubscriptionOpened) -> Self {
-        Self::StateSubscriptionOpened(payload)
-    }
-}
-
-impl From<RecordSubscriptionOpened> for SpiritReply {
-    fn from(payload: RecordSubscriptionOpened) -> Self {
-        Self::RecordSubscriptionOpened(payload)
-    }
-}
-
 impl From<SubscriptionOpened> for SpiritReply {
     fn from(payload: SubscriptionOpened) -> Self {
         Self::SubscriptionOpened(payload)
-    }
-}
-
-impl From<StateSubscriptionRetracted> for SpiritReply {
-    fn from(payload: StateSubscriptionRetracted) -> Self {
-        Self::StateSubscriptionRetracted(payload)
-    }
-}
-
-impl From<RecordSubscriptionRetracted> for SpiritReply {
-    fn from(payload: RecordSubscriptionRetracted) -> Self {
-        Self::RecordSubscriptionRetracted(payload)
     }
 }
 

@@ -8,13 +8,12 @@ use signal_persona_spirit::{
     ObservationMode, OperationKind, OperationReceived, Presence, QuestionIdentifier,
     QuestionPending, QuestionSummary, QuestionText, QuestionsObserved, Quote, RecordAccepted,
     RecordCaptured, RecordIdentifier, RecordProvenance, RecordProvenancesObserved, RecordQuery,
-    RecordSubscription, RecordSubscriptionOpened, RecordSubscriptionRetracted,
-    RecordSubscriptionToken, RecordsObserved, RequestUnimplemented, SpiritEvent,
-    SpiritObserverFilter, SpiritObserverFilterMatch, SpiritObserverSubscriptionToken, SpiritReply,
-    SpiritRequest, State, StateChanged, StateObservation, StateObserved, StateSubscription,
-    StateSubscriptionOpened, StateSubscriptionRetracted, StateSubscriptionToken, Statement,
-    StatementText, Subscription, SubscriptionSnapshot, SubscriptionToken, Summary, Timestamp,
-    Topic, UnimplementedReason,
+    RecordSubscription, RecordSubscriptionToken, RecordsObserved, RequestUnimplemented,
+    SpiritEvent, SpiritObserverFilter, SpiritObserverFilterMatch, SpiritObserverSubscriptionToken,
+    SpiritReply, SpiritRequest, State, StateChanged, StateObservation, StateObserved,
+    StateSubscription, StateSubscriptionToken, Statement, StatementText, Subscription,
+    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Summary,
+    Timestamp, Topic, UnimplementedReason,
 };
 use signal_sema::{SemaObservation, SemaOperation, SemaOutcome};
 
@@ -120,7 +119,7 @@ where
 fn spirit_requests_round_trip() {
     let requests = [
         SpiritRequest::State(Statement {
-            statement: StatementText::new("capture this intent"),
+            text: StatementText::new("capture this intent"),
         }),
         SpiritRequest::Record(entry()),
         SpiritRequest::Observe(Observation::State(StateObservation {})),
@@ -170,29 +169,21 @@ fn spirit_replies_round_trip() {
                 question: QuestionText::new("which intent wins?"),
             }],
         }),
-        SpiritReply::StateSubscriptionOpened(StateSubscriptionOpened {
-            token: StateSubscriptionToken { identifier: 1 },
-            snapshot: state(),
-        }),
-        SpiritReply::RecordSubscriptionOpened(RecordSubscriptionOpened {
-            token: RecordSubscriptionToken { identifier: 2 },
-            snapshot: vec![summary()],
-        }),
-        SpiritReply::SubscriptionOpened(signal_persona_spirit::SubscriptionOpened {
+        SpiritReply::SubscriptionOpened(SubscriptionOpened {
             token: SubscriptionToken::State(StateSubscriptionToken { identifier: 1 }),
             snapshot: SubscriptionSnapshot::State(state()),
         }),
-        SpiritReply::StateSubscriptionRetracted(StateSubscriptionRetracted {
-            token: StateSubscriptionToken { identifier: 1 },
+        SpiritReply::SubscriptionOpened(SubscriptionOpened {
+            token: SubscriptionToken::Records(RecordSubscriptionToken { identifier: 2 }),
+            snapshot: SubscriptionSnapshot::Records(vec![summary()]),
         }),
-        SpiritReply::RecordSubscriptionRetracted(RecordSubscriptionRetracted {
-            token: RecordSubscriptionToken { identifier: 2 },
+        SpiritReply::SubscriptionRetracted(SubscriptionRetracted {
+            token: SubscriptionToken::State(StateSubscriptionToken { identifier: 1 }),
         }),
-        SpiritReply::SubscriptionRetracted(signal_persona_spirit::SubscriptionRetracted {
+        SpiritReply::SubscriptionRetracted(SubscriptionRetracted {
             token: SubscriptionToken::Records(RecordSubscriptionToken { identifier: 2 }),
         }),
         SpiritReply::RequestUnimplemented(RequestUnimplemented {
-            operation: OperationKind::State,
             reason: UnimplementedReason::NotBuiltYet,
         }),
     ];
@@ -238,7 +229,7 @@ fn spirit_events_round_trip() {
 fn spirit_request_exposes_contract_owned_operation_kind() {
     assert_eq!(
         SpiritRequest::State(Statement {
-            statement: StatementText::new("capture this intent"),
+            text: StatementText::new("capture this intent"),
         })
         .operation_kind(),
         OperationKind::State
@@ -301,7 +292,7 @@ fn spirit_observer_filter_routes_operation_and_effect_events() {
 fn spirit_canonical_examples_round_trip() {
     round_trip_nota(
         SpiritRequest::State(Statement {
-            statement: StatementText::new("capture this intent"),
+            text: StatementText::new("capture this intent"),
         }),
         "(State (\"capture this intent\"))",
     );

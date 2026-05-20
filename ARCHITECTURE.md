@@ -102,7 +102,7 @@ label is computed at observation publish time inside the daemon.
 |---|---|
 | Every request variant is a contract-local verb in verb form. | `round_trip.rs` asserts each variant's NOTA head. |
 | Subscribe-shaped variants declare stream relations. | `signal_channel!` stream blocks bind subscribe/open/event/close. |
-| Retract-shaped close variants have typed close acknowledgements. | `StateSubscriptionRetracted` and `RecordSubscriptionRetracted` round-trip through RKYV and NOTA. |
+| Retract-shaped close variants have typed close acknowledgements. | `SubscriptionRetracted` carries the typed `SubscriptionToken` sum and round-trips through RKYV and NOTA. |
 | Intent queries are summary-first unless a richer mode is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
 | Every entry is one top-level psyche statement. | `Entry` carries one timestamp and one quote; repeated entries are the restatement signal. |
 | Record identifiers are output-only. | `RecordIdentifier` appears in summaries/provenance replies, not in `Entry`. |
