@@ -254,7 +254,7 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 [[package]]
 name = "signal-frame"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#68891f60684f63338253a21816b7b6e2787d8f51"
+source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#fb53a6be46196cc9f266dcdda0daea7fc7d17648"
 dependencies = [
  "nota-codec",
  "rkyv",
@@ -265,7 +265,7 @@ dependencies = [
 [[package]]
 name = "signal-frame-macros"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#68891f60684f63338253a21816b7b6e2787d8f51"
+source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#fb53a6be46196cc9f266dcdda0daea7fc7d17648"
 dependencies = [
  "proc-macro2",
  "quote",
