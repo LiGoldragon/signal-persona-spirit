@@ -8,7 +8,7 @@
 use nota_codec::{NotaEnum, NotaRecord, NotaSum, NotaTransparent};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use signal_frame::signal_channel;
-use signal_sema::SemaOperation;
+use signal_sema::SemaObservation;
 
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
@@ -413,7 +413,7 @@ pub struct OperationReceived {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct SemaEffectEmitted {
-    pub operation: SemaOperation,
+    pub observation: SemaObservation,
 }
 
 signal_channel! {

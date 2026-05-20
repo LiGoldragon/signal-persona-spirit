@@ -25,4 +25,4 @@
 (StateChanged ((Active "implementation")))
 (RecordCaptured ((1 workspace Decision "summary only" Maximum)))
 (OperationReceived (Record))
-(SemaEffectEmitted (Assert))
+(SemaEffectEmitted ((Assert Asserted)))

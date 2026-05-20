@@ -15,7 +15,7 @@ use signal_persona_spirit::{
     StateSubscriptionRetracted, StateSubscriptionToken, Statement, StatementText, Subscription,
     SubscriptionSnapshot, SubscriptionToken, Summary, Timestamp, Topic, UnimplementedReason,
 };
-use signal_sema::SemaOperation;
+use signal_sema::{SemaObservation, SemaOperation, SemaOutcome};
 
 const CANONICAL: &str = include_str!("../examples/canonical.nota");
 
@@ -210,7 +210,7 @@ fn spirit_events_round_trip() {
             operation: OperationKind::Record,
         }),
         SpiritEvent::SemaEffectEmitted(SemaEffectEmitted {
-            operation: SemaOperation::Assert,
+            observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
         }),
     ];
 
@@ -285,7 +285,7 @@ fn spirit_observer_filter_routes_operation_and_effect_events() {
         operation: OperationKind::Record,
     };
     let effect = SemaEffectEmitted {
-        operation: SemaOperation::Assert,
+        observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
     };
 
     assert!(SpiritObserverFilter::All.matches_operation_received(&operation));
@@ -346,8 +346,8 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         SpiritEvent::SemaEffectEmitted(SemaEffectEmitted {
-            operation: SemaOperation::Assert,
+            observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
         }),
-        "(SemaEffectEmitted (Assert))",
+        "(SemaEffectEmitted ((Assert Asserted)))",
     );
 }

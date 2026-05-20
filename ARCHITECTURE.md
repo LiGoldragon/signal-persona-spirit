@@ -55,8 +55,9 @@ knows the spirit tables.
 
 **Layer 3 — Sema classification (signal-sema).** Each Component
 Command projects to a payloadless `SemaOperation` class via
-`ToSemaOperation`. Persona-introspect filters cross-component
-activity by class.
+`ToSemaOperation`; each Component Effect projects to a payloadless
+`SemaOutcome` class via `ToSemaOutcome`. Persona-introspect filters
+cross-component activity through `SemaObservation`.
 
 **Frame layer.** The dependency on `signal-core` shifts to
 `signal-frame`.
@@ -100,7 +101,7 @@ label is computed at observation publish time inside the daemon.
 | Intent queries are summary-first unless a richer mode is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
 | Every entry is one top-level psyche statement. | `Entry` carries one timestamp and one quote; repeated entries are the restatement signal. |
 | Record identifiers are output-only. | `RecordIdentifier` appears in summaries/provenance replies, not in `Entry`. |
-| Sema classification is daemon-side projection only; no Sema labels on the wire. | Daemon-side `ToSemaOperation` impl is the witness. |
+| Sema classification is daemon-side projection only; no executable Sema payloads appear on the wire. | `SemaEffectEmitted` carries payloadless `SemaObservation` and daemon-side `ToSemaOperation` / `ToSemaOutcome` impls are the executable witnesses. |
 | This crate contains no runtime. | Source has no Kameo, Tokio, sockets, redb, or sema-engine code. |
 
 ## Code Map
