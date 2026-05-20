@@ -4,16 +4,17 @@ use signal_frame::{
     StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    Certainty, Context, Entry, FocusArea, Frame, FrameBody, Kind, Observation, ObservationMode,
-    OperationKind, OperationReceived, Presence, QuestionIdentifier, QuestionPending,
-    QuestionSummary, QuestionText, QuestionsObserved, Quote, RecordAccepted, RecordCaptured,
-    RecordIdentifier, RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
-    RecordSubscriptionOpened, RecordSubscriptionRetracted, RecordSubscriptionToken,
-    RecordsObserved, RequestUnimplemented, SemaEffectEmitted, SpiritEvent, SpiritObserverFilter,
-    SpiritObserverFilterMatch, SpiritObserverSubscriptionToken, SpiritReply, SpiritRequest, State,
-    StateChanged, StateObservation, StateObserved, StateSubscription, StateSubscriptionOpened,
-    StateSubscriptionRetracted, StateSubscriptionToken, Statement, StatementText, Subscription,
-    SubscriptionSnapshot, SubscriptionToken, Summary, Timestamp, Topic, UnimplementedReason,
+    Certainty, Context, Entry, FocusArea, Frame, FrameBody, Kind, Observation, ObservationEmitted,
+    ObservationMode, OperationKind, OperationReceived, Presence, QuestionIdentifier,
+    QuestionPending, QuestionSummary, QuestionText, QuestionsObserved, Quote, RecordAccepted,
+    RecordCaptured, RecordIdentifier, RecordProvenance, RecordProvenancesObserved, RecordQuery,
+    RecordSubscription, RecordSubscriptionOpened, RecordSubscriptionRetracted,
+    RecordSubscriptionToken, RecordsObserved, RequestUnimplemented, SpiritEvent,
+    SpiritObserverFilter, SpiritObserverFilterMatch, SpiritObserverSubscriptionToken, SpiritReply,
+    SpiritRequest, State, StateChanged, StateObservation, StateObserved, StateSubscription,
+    StateSubscriptionOpened, StateSubscriptionRetracted, StateSubscriptionToken, Statement,
+    StatementText, Subscription, SubscriptionSnapshot, SubscriptionToken, Summary, Timestamp,
+    Topic, UnimplementedReason,
 };
 use signal_sema::{SemaObservation, SemaOperation, SemaOutcome};
 
@@ -209,7 +210,7 @@ fn spirit_events_round_trip() {
         SpiritEvent::OperationReceived(OperationReceived {
             operation: OperationKind::Record,
         }),
-        SpiritEvent::SemaEffectEmitted(SemaEffectEmitted {
+        SpiritEvent::ObservationEmitted(ObservationEmitted {
             observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
         }),
     ];
@@ -284,7 +285,7 @@ fn spirit_observer_filter_routes_operation_and_effect_events() {
     let operation = OperationReceived {
         operation: OperationKind::Record,
     };
-    let effect = SemaEffectEmitted {
+    let effect = ObservationEmitted {
         observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
     };
 
@@ -345,9 +346,9 @@ fn spirit_canonical_examples_round_trip() {
         "(RecordCaptured ((1 workspace Decision \"summary only\" Maximum)))",
     );
     round_trip_nota(
-        SpiritEvent::SemaEffectEmitted(SemaEffectEmitted {
+        SpiritEvent::ObservationEmitted(ObservationEmitted {
             observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
         }),
-        "(SemaEffectEmitted ((Assert Asserted)))",
+        "(ObservationEmitted ((Assert Asserted)))",
     );
 }

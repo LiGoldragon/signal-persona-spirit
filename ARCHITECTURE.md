@@ -13,17 +13,18 @@ Privileged lifecycle/configuration orders live in
 `owner-signal-persona-spirit`. Runtime actors, sockets, storage, classifier
 logic, and mind forwarding live in `persona-spirit`.
 
-## MUST IMPLEMENT — three-layer migration
+## Three-layer model
 
-This contract is migrating to the three-layer model affirmed
-2026-05-20 per
-`primary/reports/designer/246-v4-bundled-fix-deep-design-with-examples.md`
-and `primary/reports/designer/248-three-layer-changes-for-operators.md`.
+This contract is on the current three-layer model affirmed
+2026-05-20:
 
-**Layer 1 — Contract Operations on the wire (this crate).** Drop the
-`Assert Statement` / `Assert Entry` / `Match *Observation` /
-`Subscribe *Subscription` / `Retract *SubscriptionRetraction` shape.
-Use contract-local verbs entirely:
+```text
+contract Operation  ->  component Command  ->  Sema classification
+wire vocabulary         daemon executable      payloadless observation
+```
+
+**Layer 1 — Contract operations on the wire (this crate).**
+The ordinary contract uses contract-local verbs:
 - `State` (the psyche stating intent, payload `Quote` or
   `Statement`),
 - `Record` (an agent submitting a typed intent entry, payload
@@ -46,12 +47,8 @@ state and intent-record streams is a separate surface and coexists
 without collision (spirit's domain doesn't use `Tap` as a verb).
 
 **Layer 2 — Component Commands (persona-spirit daemon).** The spirit
-daemon owns its typed Command enum (e.g.
-`SpiritCommand::AssertStatement(Statement)`,
-`SpiritCommand::AssertEntry(Entry)`,
-`SpiritCommand::ReadPsycheState`,
-`SpiritCommand::ReadIntentRecords`) plus a `CommandExecutor` that
-knows the spirit tables.
+daemon owns its typed Command enum plus a `CommandExecutor` that knows
+the spirit tables. Executable payloads do not live in this contract.
 
 **Layer 3 — Sema classification (signal-sema).** Each Component
 Command projects to a payloadless `SemaOperation` class via
@@ -59,8 +56,7 @@ Command projects to a payloadless `SemaOperation` class via
 `SemaOutcome` class via `ToSemaOutcome`. Persona-introspect filters
 cross-component activity through `SemaObservation`.
 
-**Frame layer.** The dependency on `signal-core` shifts to
-`signal-frame`.
+**Frame layer.** Frame mechanics come from `signal-frame`.
 
 References:
 - `primary/reports/designer/246-v4-bundled-fix-deep-design-with-examples.md`
@@ -68,11 +64,20 @@ References:
 - `primary/skills/component-triad.md` §"Verbs come in three layers"
 - `primary/skills/contract-repo.md` §"Public contracts use contract-local operation verbs"
 
-**Note to remover:** when the refactor lands, remove this section and
-add a `## Migration history — three-layer model (2026-05-XX)`
-paragraph noting the shape change.
+## Migration history — three-layer model (2026-05-20)
 
-## Contract Surface (after migration)
+The old shape coupled the wire vocabulary to Sema roots
+(`Assert Statement`, `Match *Observation`, `Subscribe *Subscription`,
+`Retract *SubscriptionRetraction`). That shape is retired. The wire now
+uses the contract-local verbs listed below, while Sema appears only as
+daemon-side payloadless classification.
+
+The generic observable classification event record is now
+`ObservationEmitted`, matching the current architecture where generic
+observers see payloadless Sema observations rather than executable
+effect records.
+
+## Contract Surface
 
 | Operation | Payload | Sema class (Layer 3 projection) |
 |---|---|---|
@@ -101,7 +106,7 @@ label is computed at observation publish time inside the daemon.
 | Intent queries are summary-first unless a richer mode is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
 | Every entry is one top-level psyche statement. | `Entry` carries one timestamp and one quote; repeated entries are the restatement signal. |
 | Record identifiers are output-only. | `RecordIdentifier` appears in summaries/provenance replies, not in `Entry`. |
-| Sema classification is daemon-side projection only; no executable Sema payloads appear on the wire. | `SemaEffectEmitted` carries payloadless `SemaObservation` and daemon-side `ToSemaOperation` / `ToSemaOutcome` impls are the executable witnesses. |
+| Sema classification is daemon-side projection only; no executable Sema payloads appear on the wire. | `ObservationEmitted` carries payloadless `SemaObservation` and daemon-side `ToSemaOperation` / `ToSemaOutcome` impls are the executable witnesses. |
 | This crate contains no runtime. | Source has no Kameo, Tokio, sockets, redb, or sema-engine code. |
 
 ## Code Map
