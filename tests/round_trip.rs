@@ -4,7 +4,7 @@ use signal_frame::{
     StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    Certainty, Context, EffectEmitted, Entry, FocusArea, Frame, FrameBody, Kind, Observation,
+    Certainty, Context, Date, EffectEmitted, Entry, FocusArea, Frame, FrameBody, Kind, Observation,
     ObservationMode, OperationKind, OperationReceived, Presence, QuestionIdentifier,
     QuestionSummary, QuestionText, QuestionsObserved, Quote, RecordAccepted, RecordCaptured,
     RecordIdentifier, RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
@@ -12,7 +12,7 @@ use signal_persona_spirit::{
     SpiritObserverFilter, SpiritObserverFilterMatch, SpiritObserverSubscriptionToken, SpiritReply,
     SpiritRequest, State, StateChanged, StateObserved, StateSubscriptionToken, Statement,
     StatementText, Subscription, SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot,
-    SubscriptionToken, Summary, Timestamp, Topic, UnimplementedReason,
+    SubscriptionToken, Summary, Time, Topic, UnimplementedReason,
 };
 use signal_sema::{SemaObservation, SemaOperation, SemaOutcome};
 
@@ -40,7 +40,8 @@ fn provenance() -> RecordProvenance {
     RecordProvenance {
         summary: summary(),
         context: Context::new("current implementation context"),
-        timestamp: Timestamp::new(1_779_000_000),
+        date: Date::new(2026, 5, 20),
+        time: Time::new(14, 30, 0),
         quote: Quote::new("first statement"),
     }
 }
@@ -52,7 +53,8 @@ fn entry() -> Entry {
         summary: Summary::new("summary only"),
         context: Context::new("current implementation context"),
         certainty: Certainty::Maximum,
-        timestamp: Timestamp::new(1_779_000_000),
+        date: Date::new(2026, 5, 20),
+        time: Time::new(14, 30, 0),
         quote: Quote::new("first statement"),
     }
 }
@@ -297,7 +299,7 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         SpiritRequest::Record(entry()),
-        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum 1779000000 \"first statement\"))",
+        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum (2026 5 20) (14 30 0) \"first statement\"))",
     );
     round_trip_nota(
         SpiritRequest::Observe(Observation::State),
@@ -338,7 +340,7 @@ fn spirit_canonical_examples_round_trip() {
         SpiritReply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
         }),
-        "(RecordProvenancesObserved ([((1 workspace Decision \"summary only\" Maximum) \"current implementation context\" 1779000000 \"first statement\")]))",
+        "(RecordProvenancesObserved ([((1 workspace Decision \"summary only\" Maximum) \"current implementation context\" (2026 5 20) (14 30 0) \"first statement\")]))",
     );
     round_trip_nota(
         SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }),
@@ -349,5 +351,17 @@ fn spirit_canonical_examples_round_trip() {
             observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
         }),
         "(EffectEmitted ((Assert Asserted)))",
+    );
+}
+
+#[test]
+fn opaque_integer_timestamp_shape_is_rejected() {
+    let mut decoder = Decoder::new(
+        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum 1779000000 \"first statement\"))",
+    );
+    let error = SpiritRequest::decode(&mut decoder).expect_err("opaque timestamp must not decode");
+    assert!(
+        error.to_string().contains("opening a record"),
+        "old integer timestamp shape should fail at the typed Date field, got {error:?}"
     );
 }

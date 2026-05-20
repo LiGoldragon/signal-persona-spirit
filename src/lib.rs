@@ -110,17 +110,36 @@ impl Context {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq, Hash,
 )]
-pub struct Timestamp(u64);
+pub struct Date {
+    pub year: u16,
+    pub month: u8,
+    pub day: u8,
+}
 
-impl Timestamp {
-    pub const fn new(value: u64) -> Self {
-        Self(value)
+impl Date {
+    pub const fn new(year: u16, month: u8, day: u8) -> Self {
+        Self { year, month, day }
     }
+}
 
-    pub const fn seconds(self) -> u64 {
-        self.0
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq, Hash,
+)]
+pub struct Time {
+    pub hour: u8,
+    pub minute: u8,
+    pub second: u8,
+}
+
+impl Time {
+    pub const fn new(hour: u8, minute: u8, second: u8) -> Self {
+        Self {
+            hour,
+            minute,
+            second,
+        }
     }
 }
 
@@ -197,7 +216,8 @@ pub struct Entry {
     pub summary: Summary,
     pub context: Context,
     pub certainty: Certainty,
-    pub timestamp: Timestamp,
+    pub date: Date,
+    pub time: Time,
     pub quote: Quote,
 }
 
@@ -231,7 +251,8 @@ pub struct RecordSummary {
 pub struct RecordProvenance {
     pub summary: RecordSummary,
     pub context: Context,
-    pub timestamp: Timestamp,
+    pub date: Date,
+    pub time: Time,
     pub quote: Quote,
 }
 
