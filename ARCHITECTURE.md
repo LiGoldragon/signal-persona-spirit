@@ -41,7 +41,7 @@ Apply the verb-form rule per `intent/naming.nota` 19:45Z:
 **Mandatory `Tap`/`Untap` for persona components.** Persona-spirit is
 a persona component, so its observable surface is standardized.
 The macro-injected `Tap(ObserverFilter)` /
-`Untap(SpiritObserverSubscriptionToken)` verbs are mandatory on the
+`Untap(ObserverSubscriptionToken)` verbs are mandatory on the
 ordinary socket. The domain-specific `Watch`/`Unwatch` for psyche-
 state and intent-record streams is a separate surface and coexists
 without collision (spirit's domain doesn't use `Tap` as a verb).
@@ -91,7 +91,7 @@ Sema observations rather than executable effect records.
 | `Watch` (domain records stream) | `RecordsSubscription` | `Subscribe` |
 | `Unwatch` (domain records stream) | `RecordsSubscriptionToken` | `Retract` |
 | `Tap` (mandatory observability) | `ObserverFilter` | `Subscribe` |
-| `Untap` (mandatory observability) | `SpiritObserverSubscriptionToken` | `Retract` |
+| `Untap` (mandatory observability) | `ObserverSubscriptionToken` | `Retract` |
 
 The wire form carries the contract-local verb only; the Sema class
 label is computed at observation publish time inside the daemon.

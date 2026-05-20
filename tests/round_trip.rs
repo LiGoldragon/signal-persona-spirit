@@ -1,18 +1,18 @@
 use nota_codec::{Decoder, Encoder, NotaDecode, NotaEncode};
 use signal_frame::{
-    ExchangeIdentifier, ExchangeLane, LaneSequence, NonEmpty, Reply, RequestPayload, SessionEpoch,
-    StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
+    ExchangeIdentifier, ExchangeLane, LaneSequence, NonEmpty, Reply as FrameReply, RequestPayload,
+    SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    Certainty, Context, Date, EffectEmitted, Entry, FocusArea, Frame, FrameBody, Kind, Observation,
-    ObservationMode, OperationKind, OperationReceived, Presence, QuestionIdentifier,
-    QuestionSummary, QuestionText, QuestionsObserved, Quote, RecordAccepted, RecordCaptured,
-    RecordIdentifier, RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
-    RecordSubscriptionToken, RecordsObserved, RequestUnimplemented, SpiritEvent,
-    SpiritObserverFilter, SpiritObserverFilterMatch, SpiritObserverSubscriptionToken, SpiritReply,
-    SpiritRequest, State, StateChanged, StateObserved, StateSubscriptionToken, Statement,
-    StatementText, Subscription, SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot,
-    SubscriptionToken, Summary, Time, Topic, UnimplementedReason,
+    Certainty, Context, Date, EffectEmitted, Entry, Event, FocusArea, Frame, FrameBody, Kind,
+    Observation, ObservationMode, ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken,
+    Operation, OperationKind, OperationReceived, Presence, QuestionIdentifier, QuestionSummary,
+    QuestionText, QuestionsObserved, Quote, RecordAccepted, RecordCaptured, RecordIdentifier,
+    RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
+    RecordSubscriptionToken, RecordsObserved, Reply, RequestUnimplemented, State, StateChanged,
+    StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
+    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Summary,
+    Time, Topic, UnimplementedReason,
 };
 use signal_sema::{SemaObservation, SemaOperation, SemaOutcome};
 
@@ -64,7 +64,7 @@ fn state() -> State {
     }
 }
 
-fn round_trip_request(request: SpiritRequest) -> SpiritRequest {
+fn round_trip_request(request: Operation) -> Operation {
     let frame = Frame::new(FrameBody::Request {
         exchange: exchange(),
         request: request.clone().into_request(),
@@ -77,16 +77,16 @@ fn round_trip_request(request: SpiritRequest) -> SpiritRequest {
     }
 }
 
-fn round_trip_reply(reply: SpiritReply) -> SpiritReply {
+fn round_trip_reply(reply: Reply) -> Reply {
     let frame = Frame::new(FrameBody::Reply {
         exchange: exchange(),
-        reply: Reply::committed(NonEmpty::single(SubReply::Ok(reply))),
+        reply: FrameReply::committed(NonEmpty::single(SubReply::Ok(reply))),
     });
     let bytes = frame.encode_length_prefixed().expect("encode");
     let decoded = Frame::decode_length_prefixed(&bytes).expect("decode");
     match decoded.into_body() {
         FrameBody::Reply { reply, .. } => match reply {
-            Reply::Accepted { per_operation, .. } => match per_operation.into_head() {
+            FrameReply::Accepted { per_operation, .. } => match per_operation.into_head() {
                 SubReply::Ok(payload) => payload,
                 other => panic!("expected accepted reply payload, got {other:?}"),
             },
@@ -117,31 +117,31 @@ where
 #[test]
 fn spirit_requests_round_trip() {
     let requests = [
-        SpiritRequest::State(Statement {
+        Operation::State(Statement {
             text: StatementText::new("capture this intent"),
         }),
-        SpiritRequest::Record(entry()),
-        SpiritRequest::Observe(Observation::State),
-        SpiritRequest::Observe(Observation::Records(RecordQuery {
+        Operation::Record(entry()),
+        Operation::Observe(Observation::State),
+        Operation::Observe(Observation::Records(RecordQuery {
             topic: None,
             mode: ObservationMode::SummaryOnly,
         })),
-        SpiritRequest::Observe(Observation::Questions),
-        SpiritRequest::Watch(Subscription::State),
-        SpiritRequest::Watch(Subscription::Records(RecordSubscription {
+        Operation::Observe(Observation::Questions),
+        Operation::Watch(Subscription::State),
+        Operation::Watch(Subscription::Records(RecordSubscription {
             topic: None,
             mode: ObservationMode::SummaryOnly,
         })),
-        SpiritRequest::Unwatch(SubscriptionToken::State(StateSubscriptionToken {
+        Operation::Unwatch(SubscriptionToken::State(StateSubscriptionToken {
             identifier: 1,
         })),
-        SpiritRequest::Unwatch(SubscriptionToken::Records(RecordSubscriptionToken {
+        Operation::Unwatch(SubscriptionToken::Records(RecordSubscriptionToken {
             identifier: 2,
         })),
-        SpiritRequest::Tap(SpiritObserverFilter::OperationsOnly),
-        SpiritRequest::Untap(SpiritObserverSubscriptionToken::new(
-            SubscriptionTokenInner::new(3),
-        )),
+        Operation::Tap(ObserverFilter::OperationsOnly),
+        Operation::Untap(ObserverSubscriptionToken::new(SubscriptionTokenInner::new(
+            3,
+        ))),
     ];
 
     for request in requests {
@@ -152,37 +152,37 @@ fn spirit_requests_round_trip() {
 #[test]
 fn spirit_replies_round_trip() {
     let replies = [
-        SpiritReply::RecordAccepted(RecordAccepted {
+        Reply::RecordAccepted(RecordAccepted {
             captured: summary(),
         }),
-        SpiritReply::StateObserved(StateObserved { state: state() }),
-        SpiritReply::RecordsObserved(RecordsObserved {
+        Reply::StateObserved(StateObserved { state: state() }),
+        Reply::RecordsObserved(RecordsObserved {
             records: vec![summary()],
         }),
-        SpiritReply::RecordProvenancesObserved(RecordProvenancesObserved {
+        Reply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
         }),
-        SpiritReply::QuestionsObserved(QuestionsObserved {
+        Reply::QuestionsObserved(QuestionsObserved {
             questions: vec![QuestionSummary {
                 identifier: QuestionIdentifier::new("question-one"),
                 question: QuestionText::new("which intent wins?"),
             }],
         }),
-        SpiritReply::SubscriptionOpened(SubscriptionOpened {
+        Reply::SubscriptionOpened(SubscriptionOpened {
             token: SubscriptionToken::State(StateSubscriptionToken { identifier: 1 }),
             snapshot: SubscriptionSnapshot::State(state()),
         }),
-        SpiritReply::SubscriptionOpened(SubscriptionOpened {
+        Reply::SubscriptionOpened(SubscriptionOpened {
             token: SubscriptionToken::Records(RecordSubscriptionToken { identifier: 2 }),
             snapshot: SubscriptionSnapshot::Records(vec![summary()]),
         }),
-        SpiritReply::SubscriptionRetracted(SubscriptionRetracted {
+        Reply::SubscriptionRetracted(SubscriptionRetracted {
             token: SubscriptionToken::State(StateSubscriptionToken { identifier: 1 }),
         }),
-        SpiritReply::SubscriptionRetracted(SubscriptionRetracted {
+        Reply::SubscriptionRetracted(SubscriptionRetracted {
             token: SubscriptionToken::Records(RecordSubscriptionToken { identifier: 2 }),
         }),
-        SpiritReply::RequestUnimplemented(RequestUnimplemented {
+        Reply::RequestUnimplemented(RequestUnimplemented {
             reason: UnimplementedReason::NotBuiltYet,
         }),
     ];
@@ -193,14 +193,29 @@ fn spirit_replies_round_trip() {
 }
 
 #[test]
+fn spirit_reply_payloads_convert_through_macro_generated_from_impls() {
+    let reply: Reply = RecordAccepted {
+        captured: summary(),
+    }
+    .into();
+
+    assert_eq!(
+        reply,
+        Reply::RecordAccepted(RecordAccepted {
+            captured: summary(),
+        })
+    );
+}
+
+#[test]
 fn spirit_events_round_trip() {
     let events = [
-        SpiritEvent::StateChanged(StateChanged { state: state() }),
-        SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }),
-        SpiritEvent::OperationReceived(OperationReceived {
+        Event::StateChanged(StateChanged { state: state() }),
+        Event::RecordCaptured(RecordCaptured { record: summary() }),
+        Event::OperationReceived(OperationReceived {
             operation: OperationKind::Record,
         }),
-        SpiritEvent::EffectEmitted(EffectEmitted {
+        Event::EffectEmitted(EffectEmitted {
             observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
         }),
     ];
@@ -225,24 +240,21 @@ fn spirit_events_round_trip() {
 }
 
 #[test]
-fn spirit_request_exposes_contract_owned_operation_kind() {
+fn spirit_request_exposes_contract_owned_kind() {
     assert_eq!(
-        SpiritRequest::State(Statement {
+        Operation::State(Statement {
             text: StatementText::new("capture this intent"),
         })
-        .operation_kind(),
+        .kind(),
         OperationKind::State
     );
+    assert_eq!(Operation::Record(entry()).kind(), OperationKind::Record);
     assert_eq!(
-        SpiritRequest::Record(entry()).operation_kind(),
-        OperationKind::Record
-    );
-    assert_eq!(
-        SpiritRequest::Watch(Subscription::Records(RecordSubscription {
+        Operation::Watch(Subscription::Records(RecordSubscription {
             topic: None,
             mode: ObservationMode::SummaryOnly,
         }))
-        .operation_kind(),
+        .kind(),
         OperationKind::Watch
     );
 }
@@ -250,23 +262,23 @@ fn spirit_request_exposes_contract_owned_operation_kind() {
 #[test]
 fn spirit_stream_witnesses_are_emitted() {
     assert_eq!(
-        SpiritRequest::Watch(Subscription::State).opened_stream(),
-        Some(signal_persona_spirit::SpiritStreamKind::DomainStream)
+        Operation::Watch(Subscription::State).opened_stream(),
+        Some(signal_persona_spirit::StreamKind::DomainStream)
     );
     assert_eq!(
-        SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }).stream_kind(),
-        signal_persona_spirit::SpiritStreamKind::DomainStream
+        Event::RecordCaptured(RecordCaptured { record: summary() }).stream_kind(),
+        signal_persona_spirit::StreamKind::DomainStream
     );
     assert_eq!(
-        SpiritRequest::Unwatch(SubscriptionToken::State(StateSubscriptionToken {
+        Operation::Unwatch(SubscriptionToken::State(StateSubscriptionToken {
             identifier: 1
         }))
         .closed_stream(),
-        Some(signal_persona_spirit::SpiritStreamKind::DomainStream)
+        Some(signal_persona_spirit::StreamKind::DomainStream)
     );
     assert_eq!(
-        SpiritRequest::Tap(SpiritObserverFilter::All).opened_stream(),
-        Some(signal_persona_spirit::SpiritStreamKind::ObserverStream)
+        Operation::Tap(ObserverFilter::All).opened_stream(),
+        Some(signal_persona_spirit::StreamKind::ObserverStream)
     );
 }
 
@@ -279,73 +291,70 @@ fn spirit_observer_filter_routes_operation_and_effect_events() {
         observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
     };
 
-    assert!(SpiritObserverFilter::All.matches_operation_received(&operation));
-    assert!(SpiritObserverFilter::All.matches_effect_emitted(&effect));
-    assert!(SpiritObserverFilter::OperationsOnly.matches_operation_received(&operation));
-    assert!(!SpiritObserverFilter::OperationsOnly.matches_effect_emitted(&effect));
-    assert!(!SpiritObserverFilter::EffectsOnly.matches_operation_received(&operation));
-    assert!(SpiritObserverFilter::EffectsOnly.matches_effect_emitted(&effect));
+    assert!(ObserverFilter::All.matches_operation_received(&operation));
+    assert!(ObserverFilter::All.matches_effect_emitted(&effect));
+    assert!(ObserverFilter::OperationsOnly.matches_operation_received(&operation));
+    assert!(!ObserverFilter::OperationsOnly.matches_effect_emitted(&effect));
+    assert!(!ObserverFilter::EffectsOnly.matches_operation_received(&operation));
+    assert!(ObserverFilter::EffectsOnly.matches_effect_emitted(&effect));
 }
 
 #[test]
 fn spirit_canonical_examples_round_trip() {
     round_trip_nota(
-        SpiritRequest::State(Statement {
+        Operation::State(Statement {
             text: StatementText::new("capture this intent"),
         }),
         "(State (\"capture this intent\"))",
     );
     round_trip_nota(
-        SpiritRequest::Record(entry()),
+        Operation::Record(entry()),
         "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum \"first statement\"))",
     );
+    round_trip_nota(Operation::Observe(Observation::State), "(Observe State)");
     round_trip_nota(
-        SpiritRequest::Observe(Observation::State),
-        "(Observe State)",
-    );
-    round_trip_nota(
-        SpiritRequest::Observe(Observation::Records(RecordQuery {
+        Operation::Observe(Observation::Records(RecordQuery {
             topic: None,
             mode: ObservationMode::SummaryOnly,
         })),
         "(Observe (Records (None SummaryOnly)))",
     );
     round_trip_nota(
-        SpiritRequest::Observe(Observation::Questions),
+        Operation::Observe(Observation::Questions),
         "(Observe Questions)",
     );
-    round_trip_nota(SpiritRequest::Watch(Subscription::State), "(Watch State)");
+    round_trip_nota(Operation::Watch(Subscription::State), "(Watch State)");
     round_trip_nota(
-        SpiritRequest::Watch(Subscription::Records(RecordSubscription {
+        Operation::Watch(Subscription::Records(RecordSubscription {
             topic: None,
             mode: ObservationMode::SummaryOnly,
         })),
         "(Watch (Records (None SummaryOnly)))",
     );
     round_trip_nota(
-        SpiritRequest::Unwatch(SubscriptionToken::Records(RecordSubscriptionToken {
+        Operation::Unwatch(SubscriptionToken::Records(RecordSubscriptionToken {
             identifier: 2,
         })),
         "(Unwatch (Records (2)))",
     );
     round_trip_nota(
-        SpiritReply::RecordAccepted(RecordAccepted {
+        Reply::RecordAccepted(RecordAccepted {
             captured: summary(),
         }),
         "(RecordAccepted ((1 workspace Decision \"summary only\" Maximum)))",
     );
     round_trip_nota(
-        SpiritReply::RecordProvenancesObserved(RecordProvenancesObserved {
+        Reply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
         }),
         "(RecordProvenancesObserved ([((1 workspace Decision \"summary only\" Maximum) \"current implementation context\" 2026-05-20 14:30:00 \"first statement\")]))",
     );
     round_trip_nota(
-        SpiritEvent::RecordCaptured(RecordCaptured { record: summary() }),
+        Event::RecordCaptured(RecordCaptured { record: summary() }),
         "(RecordCaptured ((1 workspace Decision \"summary only\" Maximum)))",
     );
     round_trip_nota(
-        SpiritEvent::EffectEmitted(EffectEmitted {
+        Event::EffectEmitted(EffectEmitted {
             observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
         }),
         "(EffectEmitted ((Assert Asserted)))",
@@ -357,7 +366,7 @@ fn record_request_with_client_timestamp_shape_is_rejected() {
     let mut decoder = Decoder::new(
         "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum 1779000000 \"first statement\"))",
     );
-    SpiritRequest::decode(&mut decoder).expect_err("client timestamp must not decode");
+    Operation::decode(&mut decoder).expect_err("client timestamp must not decode");
 }
 
 #[test]
@@ -365,6 +374,5 @@ fn record_request_with_parenthesized_client_date_time_shape_is_rejected() {
     let mut decoder = Decoder::new(
         "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum (2026 5 20) (14 30 0) \"first statement\"))",
     );
-    SpiritRequest::decode(&mut decoder)
-        .expect_err("parenthesized client date/time must not decode");
+    Operation::decode(&mut decoder).expect_err("parenthesized client date/time must not decode");
 }

@@ -386,19 +386,6 @@ pub struct SubscriptionRetracted {
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
 )]
-pub enum OperationKind {
-    State,
-    Record,
-    Observe,
-    Watch,
-    Unwatch,
-    Tap,
-    Untap,
-}
-
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
-)]
 pub enum UnimplementedReason {
     NotBuiltYet,
     IntegrationNotLanded,
@@ -437,99 +424,30 @@ signal_channel! {
         operation Watch(Subscription) opens DomainStream,
         operation Unwatch(SubscriptionToken),
     }
-        reply SpiritReply {
-            RecordAccepted(RecordAccepted),
-            StateObserved(StateObserved),
-            RecordsObserved(RecordsObserved),
-            RecordProvenancesObserved(RecordProvenancesObserved),
-            QuestionsObserved(QuestionsObserved),
-            SubscriptionOpened(SubscriptionOpened),
-            SubscriptionRetracted(SubscriptionRetracted),
-            RequestUnimplemented(RequestUnimplemented),
-        }
-        event SpiritEvent {
-            StateChanged(StateChanged) belongs DomainStream,
-            RecordCaptured(RecordCaptured) belongs DomainStream,
-        }
-        stream DomainStream {
-            token SubscriptionToken;
-            opened SubscriptionOpened;
-            event StateChanged;
-            event RecordCaptured;
-            close Unwatch;
-        }
-        observable {
-            filter default;
-            operation_event OperationReceived;
-            effect_event EffectEmitted;
-        }
-}
-
-pub type Frame = SpiritFrame;
-pub type FrameBody = SpiritFrameBody;
-pub type ChannelRequest = SpiritChannelRequest;
-pub type ChannelReply = SpiritChannelReply;
-pub type RequestBuilder = SpiritRequestBuilder;
-pub type SpiritRequest = SpiritOperation;
-
-impl SpiritRequest {
-    pub fn operation_kind(&self) -> OperationKind {
-        match self {
-            Self::State(_) => OperationKind::State,
-            Self::Record(_) => OperationKind::Record,
-            Self::Observe(_) => OperationKind::Observe,
-            Self::Watch(_) => OperationKind::Watch,
-            Self::Unwatch(_) => OperationKind::Unwatch,
-            Self::Tap(_) => OperationKind::Tap,
-            Self::Untap(_) => OperationKind::Untap,
-        }
+    reply Reply {
+        RecordAccepted(RecordAccepted),
+        StateObserved(StateObserved),
+        RecordsObserved(RecordsObserved),
+        RecordProvenancesObserved(RecordProvenancesObserved),
+        QuestionsObserved(QuestionsObserved),
+        SubscriptionOpened(SubscriptionOpened),
+        SubscriptionRetracted(SubscriptionRetracted),
+        RequestUnimplemented(RequestUnimplemented),
     }
-}
-
-impl From<RecordAccepted> for SpiritReply {
-    fn from(payload: RecordAccepted) -> Self {
-        Self::RecordAccepted(payload)
+    event Event {
+        StateChanged(StateChanged) belongs DomainStream,
+        RecordCaptured(RecordCaptured) belongs DomainStream,
     }
-}
-
-impl From<StateObserved> for SpiritReply {
-    fn from(payload: StateObserved) -> Self {
-        Self::StateObserved(payload)
+    stream DomainStream {
+        token SubscriptionToken;
+        opened SubscriptionOpened;
+        event StateChanged;
+        event RecordCaptured;
+        close Unwatch;
     }
-}
-
-impl From<RecordsObserved> for SpiritReply {
-    fn from(payload: RecordsObserved) -> Self {
-        Self::RecordsObserved(payload)
-    }
-}
-
-impl From<RecordProvenancesObserved> for SpiritReply {
-    fn from(payload: RecordProvenancesObserved) -> Self {
-        Self::RecordProvenancesObserved(payload)
-    }
-}
-
-impl From<QuestionsObserved> for SpiritReply {
-    fn from(payload: QuestionsObserved) -> Self {
-        Self::QuestionsObserved(payload)
-    }
-}
-
-impl From<SubscriptionOpened> for SpiritReply {
-    fn from(payload: SubscriptionOpened) -> Self {
-        Self::SubscriptionOpened(payload)
-    }
-}
-
-impl From<SubscriptionRetracted> for SpiritReply {
-    fn from(payload: SubscriptionRetracted) -> Self {
-        Self::SubscriptionRetracted(payload)
-    }
-}
-
-impl From<RequestUnimplemented> for SpiritReply {
-    fn from(payload: RequestUnimplemented) -> Self {
-        Self::RequestUnimplemented(payload)
+    observable {
+        filter default;
+        operation_event OperationReceived;
+        effect_event EffectEmitted;
     }
 }
