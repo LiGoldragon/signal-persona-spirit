@@ -5,7 +5,7 @@
 //! Runtime actors, sockets, storage, classifier logic, and downstream
 //! owner-Mutate forwarding live in `persona-spirit`.
 
-use nota_codec::{NotaEnum, NotaRecord, NotaSum, NotaTransparent};
+use nota_codec::{NotaEnum, NotaRecord, NotaTransparent};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use signal_frame::signal_channel;
 use signal_sema::SemaObservation;
@@ -202,9 +202,6 @@ pub struct Entry {
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct StateObservation {}
-
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordQuery {
     pub topic: Option<Topic>,
     pub mode: ObservationMode,
@@ -214,12 +211,6 @@ pub struct RecordQuery {
 pub struct RecordObservation {
     pub query: RecordQuery,
 }
-
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct QuestionPending {}
-
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct StateSubscription {}
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordSubscription {
@@ -311,26 +302,26 @@ pub struct QuestionsObserved {
     pub questions: Vec<QuestionSummary>,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaSum, Debug, Clone, PartialEq, Eq)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
 pub enum Observation {
-    State(StateObservation),
+    State,
     Records(RecordQuery),
-    Questions(QuestionPending),
+    Questions,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaSum, Debug, Clone, PartialEq, Eq)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
 pub enum Subscription {
-    State(StateSubscription),
+    State,
     Records(RecordSubscription),
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaSum, Debug, Clone, PartialEq, Eq)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
 pub enum SubscriptionToken {
     State(StateSubscriptionToken),
     Records(RecordSubscriptionToken),
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaSum, Debug, Clone, PartialEq, Eq)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
 pub enum SubscriptionSnapshot {
     State(State),
     Records(Vec<RecordSummary>),

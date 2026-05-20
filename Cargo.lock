@@ -130,7 +130,7 @@ dependencies = [
 [[package]]
 name = "nota-codec"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/nota-codec.git?branch=main#88852e6897c12e4418b252351813f758ee438ea0"
+source = "git+https://github.com/LiGoldragon/nota-codec.git?branch=main#30693c480180d1fc2d3d3cda145c207ccd9a275f"
 dependencies = [
  "camino",
  "nota-derive",
@@ -140,7 +140,7 @@ dependencies = [
 [[package]]
 name = "nota-derive"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/nota-derive.git?branch=main#30c665f3ebf7d03e66dd1a5ee9cf67a0f36cd470"
+source = "git+https://github.com/LiGoldragon/nota-derive.git?branch=main#5174312a170debe0bb2fe04390436bf76d1e4dd8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -254,7 +254,7 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 [[package]]
 name = "signal-frame"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#fb53a6be46196cc9f266dcdda0daea7fc7d17648"
+source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#b375e20f32a5efb4e5e2cc8e18445b9369bdde09"
 dependencies = [
  "nota-codec",
  "rkyv",
@@ -265,7 +265,7 @@ dependencies = [
 [[package]]
 name = "signal-frame-macros"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#fb53a6be46196cc9f266dcdda0daea7fc7d17648"
+source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#b375e20f32a5efb4e5e2cc8e18445b9369bdde09"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -286,7 +286,7 @@ dependencies = [
 [[package]]
 name = "signal-sema"
 version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/signal-sema.git?branch=main#f4d3fe51b6052e289381a437221eb1dac899b64d"
+source = "git+https://github.com/LiGoldragon/signal-sema.git?branch=main#25476a3dc58c1363dc77d95ed56c848fb96756d3"
 dependencies = [
  "nota-codec",
  "rkyv",

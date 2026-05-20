@@ -6,14 +6,13 @@ use signal_frame::{
 use signal_persona_spirit::{
     Certainty, Context, EffectEmitted, Entry, FocusArea, Frame, FrameBody, Kind, Observation,
     ObservationMode, OperationKind, OperationReceived, Presence, QuestionIdentifier,
-    QuestionPending, QuestionSummary, QuestionText, QuestionsObserved, Quote, RecordAccepted,
-    RecordCaptured, RecordIdentifier, RecordProvenance, RecordProvenancesObserved, RecordQuery,
-    RecordSubscription, RecordSubscriptionToken, RecordsObserved, RequestUnimplemented,
-    SpiritEvent, SpiritObserverFilter, SpiritObserverFilterMatch, SpiritObserverSubscriptionToken,
-    SpiritReply, SpiritRequest, State, StateChanged, StateObservation, StateObserved,
-    StateSubscription, StateSubscriptionToken, Statement, StatementText, Subscription,
-    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Summary,
-    Timestamp, Topic, UnimplementedReason,
+    QuestionSummary, QuestionText, QuestionsObserved, Quote, RecordAccepted, RecordCaptured,
+    RecordIdentifier, RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
+    RecordSubscriptionToken, RecordsObserved, RequestUnimplemented, SpiritEvent,
+    SpiritObserverFilter, SpiritObserverFilterMatch, SpiritObserverSubscriptionToken, SpiritReply,
+    SpiritRequest, State, StateChanged, StateObserved, StateSubscriptionToken, Statement,
+    StatementText, Subscription, SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot,
+    SubscriptionToken, Summary, Timestamp, Topic, UnimplementedReason,
 };
 use signal_sema::{SemaObservation, SemaOperation, SemaOutcome};
 
@@ -122,13 +121,13 @@ fn spirit_requests_round_trip() {
             text: StatementText::new("capture this intent"),
         }),
         SpiritRequest::Record(entry()),
-        SpiritRequest::Observe(Observation::State(StateObservation {})),
+        SpiritRequest::Observe(Observation::State),
         SpiritRequest::Observe(Observation::Records(RecordQuery {
             topic: None,
             mode: ObservationMode::SummaryOnly,
         })),
-        SpiritRequest::Observe(Observation::Questions(QuestionPending {})),
-        SpiritRequest::Watch(Subscription::State(StateSubscription {})),
+        SpiritRequest::Observe(Observation::Questions),
+        SpiritRequest::Watch(Subscription::State),
         SpiritRequest::Watch(Subscription::Records(RecordSubscription {
             topic: None,
             mode: ObservationMode::SummaryOnly,
@@ -251,7 +250,7 @@ fn spirit_request_exposes_contract_owned_operation_kind() {
 #[test]
 fn spirit_stream_witnesses_are_emitted() {
     assert_eq!(
-        SpiritRequest::Watch(Subscription::State(StateSubscription {})).opened_stream(),
+        SpiritRequest::Watch(Subscription::State).opened_stream(),
         Some(signal_persona_spirit::SpiritStreamKind::DomainStream)
     );
     assert_eq!(
@@ -301,12 +300,21 @@ fn spirit_canonical_examples_round_trip() {
         "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum 1779000000 \"first statement\"))",
     );
     round_trip_nota(
+        SpiritRequest::Observe(Observation::State),
+        "(Observe State)",
+    );
+    round_trip_nota(
         SpiritRequest::Observe(Observation::Records(RecordQuery {
             topic: None,
             mode: ObservationMode::SummaryOnly,
         })),
         "(Observe (Records (None SummaryOnly)))",
     );
+    round_trip_nota(
+        SpiritRequest::Observe(Observation::Questions),
+        "(Observe Questions)",
+    );
+    round_trip_nota(SpiritRequest::Watch(Subscription::State), "(Watch State)");
     round_trip_nota(
         SpiritRequest::Watch(Subscription::Records(RecordSubscription {
             topic: None,

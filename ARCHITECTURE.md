@@ -83,10 +83,10 @@ Sema observations rather than executable effect records.
 |---|---|---|
 | `State` | `Statement` | `Assert` |
 | `Record` | `Entry` | `Assert` |
-| `Observe` (State kind) | `Observation::State` | `Match` |
+| `Observe` (state kind) | `Observation::State` unit variant | `Match` |
 | `Observe` (Records kind) | `Observation::Records` | `Match` |
-| `Observe` (QuestionsPending kind) | `Observation::QuestionsPending` | `Match` |
-| `Watch` (domain state stream) | `StateSubscription` | `Subscribe` |
+| `Observe` (questions kind) | `Observation::Questions` unit variant | `Match` |
+| `Watch` (domain state stream) | `Subscription::State` unit variant | `Subscribe` |
 | `Unwatch` (domain state stream) | `StateSubscriptionToken` | `Retract` |
 | `Watch` (domain records stream) | `RecordsSubscription` | `Subscribe` |
 | `Unwatch` (domain records stream) | `RecordsSubscriptionToken` | `Retract` |
