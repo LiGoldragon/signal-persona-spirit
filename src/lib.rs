@@ -282,6 +282,12 @@ pub struct RecordProvenance {
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct TopicCount {
+    pub topic: Topic,
+    pub entries: u64,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct State {
     pub presence: Presence,
     pub focus: Option<FocusArea>,
@@ -344,6 +350,11 @@ pub struct RecordProvenancesObserved {
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct TopicsObserved {
+    pub topics: Vec<TopicCount>,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct QuestionsObserved {
     pub questions: Vec<QuestionSummary>,
 }
@@ -352,6 +363,7 @@ pub struct QuestionsObserved {
 pub enum Observation {
     State,
     Records(RecordQuery),
+    Topics,
     Questions,
 }
 
@@ -430,6 +442,7 @@ signal_channel! {
         StateObserved(StateObserved),
         RecordsObserved(RecordsObserved),
         RecordProvenancesObserved(RecordProvenancesObserved),
+        TopicsObserved(TopicsObserved),
         QuestionsObserved(QuestionsObserved),
         SubscriptionOpened(SubscriptionOpened),
         SubscriptionRetracted(SubscriptionRetracted),

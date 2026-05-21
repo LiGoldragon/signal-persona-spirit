@@ -12,7 +12,7 @@ use signal_persona_spirit::{
     RecordSubscriptionToken, RecordsObserved, Reply, RequestUnimplemented, State, StateChanged,
     StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
     SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Summary,
-    Time, Topic, UnimplementedReason,
+    Time, Topic, TopicCount, TopicsObserved, UnimplementedReason,
 };
 use signal_sema::{SemaObservation, SemaOperation, SemaOutcome};
 
@@ -127,6 +127,7 @@ fn spirit_requests_round_trip() {
             kind: None,
             mode: ObservationMode::SummaryOnly,
         })),
+        Operation::Observe(Observation::Topics),
         Operation::Observe(Observation::Questions),
         Operation::Watch(Subscription::State),
         Operation::Watch(Subscription::Records(RecordSubscription {
@@ -162,6 +163,12 @@ fn spirit_replies_round_trip() {
         }),
         Reply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
+        }),
+        Reply::TopicsObserved(TopicsObserved {
+            topics: vec![TopicCount {
+                topic: Topic::new("workspace"),
+                entries: 2,
+            }],
         }),
         Reply::QuestionsObserved(QuestionsObserved {
             questions: vec![QuestionSummary {
@@ -329,6 +336,7 @@ fn spirit_canonical_examples_round_trip() {
         })),
         "(Observe (Records ((Some workspace) (Some Decision) SummaryOnly)))",
     );
+    round_trip_nota(Operation::Observe(Observation::Topics), "(Observe Topics)");
     round_trip_nota(
         Operation::Observe(Observation::Questions),
         "(Observe Questions)",
@@ -358,6 +366,15 @@ fn spirit_canonical_examples_round_trip() {
             records: vec![provenance()],
         }),
         "(RecordProvenancesObserved ([((1 workspace Decision \"summary only\" Maximum) \"current implementation context\" 2026-05-20 14:30:00 \"first statement\")]))",
+    );
+    round_trip_nota(
+        Reply::TopicsObserved(TopicsObserved {
+            topics: vec![TopicCount {
+                topic: Topic::new("workspace"),
+                entries: 2,
+            }],
+        }),
+        "(TopicsObserved ([(workspace 2)]))",
     );
     round_trip_nota(
         Event::RecordCaptured(RecordCaptured { record: summary() }),
