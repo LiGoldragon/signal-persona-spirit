@@ -1,5 +1,6 @@
 (State ("capture this intent"))
 (Record (workspace Decision "summary only" "current implementation context" Maximum "first statement"))
+(Record (workspace Decision "high summary" "high context" High "high quote"))
 (Observe State)
 (Observe (Records (None None SummaryOnly)))
 (Observe (Records ((Some workspace) (Some Decision) SummaryOnly)))

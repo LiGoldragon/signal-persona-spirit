@@ -4,17 +4,17 @@ use signal_frame::{
     SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    Certainty, Context, Date, EffectEmitted, Entry, Event, FocusArea, Frame, FrameBody, Kind,
-    Observation, ObservationMode, ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken,
-    Operation, OperationKind, OperationReceived, Presence, QuestionIdentifier, QuestionSummary,
-    QuestionText, QuestionsObserved, Quote, RecordAccepted, RecordCaptured, RecordIdentifier,
-    RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
-    RecordSubscriptionToken, RecordsObserved, Reply, RequestUnimplemented, State, StateChanged,
-    StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
-    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Summary,
-    Time, Topic, TopicCount, TopicsObserved, UnimplementedReason,
+    Context, Date, EffectEmitted, Entry, Event, FocusArea, Frame, FrameBody, Kind, Observation,
+    ObservationMode, ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken, Operation,
+    OperationKind, OperationReceived, Presence, QuestionIdentifier, QuestionSummary, QuestionText,
+    QuestionsObserved, Quote, RecordAccepted, RecordCaptured, RecordIdentifier, RecordProvenance,
+    RecordProvenancesObserved, RecordQuery, RecordSubscription, RecordSubscriptionToken,
+    RecordsObserved, Reply, RequestUnimplemented, State, StateChanged, StateObserved,
+    StateSubscriptionToken, Statement, StatementText, Subscription, SubscriptionOpened,
+    SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Summary, Time, Topic,
+    TopicCount, TopicsObserved, UnimplementedReason,
 };
-use signal_sema::{SemaObservation, SemaOperation, SemaOutcome};
+use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
 const CANONICAL: &str = include_str!("../examples/canonical.nota");
 
@@ -32,7 +32,7 @@ fn summary() -> signal_persona_spirit::RecordSummary {
         topic: Topic::new("workspace"),
         kind: Kind::Decision,
         summary: Summary::new("summary only"),
-        certainty: Certainty::Maximum,
+        certainty: Magnitude::Maximum,
     }
 }
 
@@ -52,7 +52,7 @@ fn entry() -> Entry {
         kind: Kind::Decision,
         summary: Summary::new("summary only"),
         context: Context::new("current implementation context"),
-        certainty: Certainty::Maximum,
+        certainty: Magnitude::Maximum,
         quote: Quote::new("first statement"),
     }
 }
@@ -311,6 +311,15 @@ fn spirit_canonical_examples_round_trip() {
     round_trip_nota(
         Operation::Record(entry()),
         "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum \"first statement\"))",
+    );
+    let mut high_entry = entry();
+    high_entry.summary = Summary::new("high summary");
+    high_entry.context = Context::new("high context");
+    high_entry.certainty = Magnitude::High;
+    high_entry.quote = Quote::new("high quote");
+    round_trip_nota(
+        Operation::Record(high_entry),
+        "(Record (workspace Decision \"high summary\" \"high context\" High \"high quote\"))",
     );
     round_trip_nota(Operation::Observe(Observation::State), "(Observe State)");
     round_trip_nota(

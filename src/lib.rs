@@ -8,7 +8,7 @@
 use nota_codec::{Decoder, Encoder, NotaDecode, NotaEncode, NotaEnum, NotaRecord, NotaTransparent};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use signal_frame::signal_channel;
-use signal_sema::SemaObservation;
+use signal_sema::{Magnitude, SemaObservation};
 
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
@@ -208,15 +208,6 @@ pub enum Kind {
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
 )]
-pub enum Certainty {
-    Maximum,
-    Medium,
-    Minimum,
-}
-
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
-)]
 pub enum ObservationMode {
     SummaryOnly,
     WithProvenance,
@@ -241,7 +232,7 @@ pub struct Entry {
     pub kind: Kind,
     pub summary: Summary,
     pub context: Context,
-    pub certainty: Certainty,
+    pub certainty: Magnitude,
     pub quote: Quote,
 }
 
@@ -269,7 +260,7 @@ pub struct RecordSummary {
     pub topic: Topic,
     pub kind: Kind,
     pub summary: Summary,
-    pub certainty: Certainty,
+    pub certainty: Magnitude,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
