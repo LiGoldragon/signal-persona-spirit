@@ -248,6 +248,7 @@ pub struct Entry {
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordQuery {
     pub topic: Option<Topic>,
+    pub kind: Option<Kind>,
     pub mode: ObservationMode,
 }
 

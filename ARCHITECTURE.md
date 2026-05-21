@@ -104,6 +104,7 @@ label is computed at observation publish time inside the daemon.
 | Subscribe-shaped variants declare stream relations. | `signal_channel!` stream blocks bind subscribe/open/event/close. |
 | Retract-shaped close variants have typed close acknowledgements. | `SubscriptionRetracted` carries the typed `SubscriptionToken` sum and round-trips through RKYV and NOTA. |
 | Intent queries are summary-first unless a richer mode is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
+| Intent record queries support the agent-useful filters needed for intent work. | `RecordQuery` carries optional `topic` and optional `kind` filters, with summary-only and provenance modes. |
 | Every submitted entry is one top-level psyche statement without client-provided capture time. | `Entry` carries topic, kind, summary, context, certainty, and quote; repeated entries are the restatement signal. |
 | Spirit never accepts client-provided timestamps on `Record` requests. | `record_request_with_client_timestamp_shape_is_rejected` and `record_request_with_parenthesized_client_date_time_shape_is_rejected` fail old timestamp-bearing input shapes. |
 | Capture time appears only in daemon-produced provenance. | `RecordProvenance` carries one bare `YYYY-MM-DD` date field and one bare `HH:MM:SS` time field. |

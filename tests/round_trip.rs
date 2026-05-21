@@ -124,6 +124,7 @@ fn spirit_requests_round_trip() {
         Operation::Observe(Observation::State),
         Operation::Observe(Observation::Records(RecordQuery {
             topic: None,
+            kind: None,
             mode: ObservationMode::SummaryOnly,
         })),
         Operation::Observe(Observation::Questions),
@@ -315,9 +316,18 @@ fn spirit_canonical_examples_round_trip() {
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
             topic: None,
+            kind: None,
             mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records (None SummaryOnly)))",
+        "(Observe (Records (None None SummaryOnly)))",
+    );
+    round_trip_nota(
+        Operation::Observe(Observation::Records(RecordQuery {
+            topic: Some(Topic::new("workspace")),
+            kind: Some(Kind::Decision),
+            mode: ObservationMode::SummaryOnly,
+        })),
+        "(Observe (Records ((Some workspace) (Some Decision) SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::Questions),
