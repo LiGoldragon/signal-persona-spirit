@@ -154,9 +154,7 @@ fn spirit_requests_round_trip() {
 #[test]
 fn spirit_replies_round_trip() {
     let replies = [
-        Reply::RecordAccepted(RecordAccepted {
-            captured: summary(),
-        }),
+        Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1))),
         Reply::StateObserved(StateObserved { state: state() }),
         Reply::RecordsObserved(RecordsObserved {
             records: vec![summary()],
@@ -202,16 +200,11 @@ fn spirit_replies_round_trip() {
 
 #[test]
 fn spirit_reply_payloads_convert_through_macro_generated_from_impls() {
-    let reply: Reply = RecordAccepted {
-        captured: summary(),
-    }
-    .into();
+    let reply: Reply = RecordAccepted::new(RecordIdentifier::new(1)).into();
 
     assert_eq!(
         reply,
-        Reply::RecordAccepted(RecordAccepted {
-            captured: summary(),
-        })
+        Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1)))
     );
 }
 
@@ -356,10 +349,8 @@ fn spirit_canonical_examples_round_trip() {
         "(Unwatch (Records (2)))",
     );
     round_trip_nota(
-        Reply::RecordAccepted(RecordAccepted {
-            captured: summary(),
-        }),
-        "(RecordAccepted ((1 workspace Decision \"summary only\" Maximum)))",
+        Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1))),
+        "(RecordAccepted 1)",
     );
     round_trip_nota(
         Reply::RecordProvenancesObserved(RecordProvenancesObserved {

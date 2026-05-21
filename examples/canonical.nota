@@ -12,7 +12,7 @@
 (Unwatch (Records (2)))
 (Tap (All))
 (Untap (ObserverSubscriptionToken 3))
-(RecordAccepted ((1 workspace Decision "summary only" Maximum)))
+(RecordAccepted 1)
 (StateObserved ((Active "implementation")))
 (RecordsObserved ([(1 workspace Decision "summary only" Maximum)]))
 (RecordProvenancesObserved ([((1 workspace Decision "summary only" Maximum) "current implementation context" 2026-05-20 14:30:00 "first statement")]))

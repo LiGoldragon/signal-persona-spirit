@@ -329,9 +329,19 @@ pub struct QuestionSummary {
     pub question: QuestionText,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct RecordAccepted {
-    pub captured: RecordSummary,
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, Copy, PartialEq, Eq,
+)]
+pub struct RecordAccepted(RecordIdentifier);
+
+impl RecordAccepted {
+    pub const fn new(identifier: RecordIdentifier) -> Self {
+        Self(identifier)
+    }
+
+    pub const fn identifier(self) -> RecordIdentifier {
+        self.0
+    }
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
