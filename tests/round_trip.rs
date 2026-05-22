@@ -306,11 +306,11 @@ fn spirit_canonical_examples_round_trip() {
         Operation::State(Statement {
             text: StatementText::new("capture this intent"),
         }),
-        "(State (\"capture this intent\"))",
+        "(State ([capture this intent]))",
     );
     round_trip_nota(
         Operation::Record(entry()),
-        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum \"first statement\"))",
+        "(Record (workspace Decision [summary only] [current implementation context] Maximum [first statement]))",
     );
     let mut high_entry = entry();
     high_entry.summary = Summary::new("high summary");
@@ -319,7 +319,7 @@ fn spirit_canonical_examples_round_trip() {
     high_entry.quote = Quote::new("high quote");
     round_trip_nota(
         Operation::Record(high_entry),
-        "(Record (workspace Decision \"high summary\" \"high context\" High \"high quote\"))",
+        "(Record (workspace Decision [high summary] [high context] High [high quote]))",
     );
     round_trip_nota(Operation::Observe(Observation::State), "(Observe State)");
     round_trip_nota(
@@ -365,7 +365,7 @@ fn spirit_canonical_examples_round_trip() {
         Reply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
         }),
-        "(RecordProvenancesObserved ([((1 workspace Decision \"summary only\" Maximum) \"current implementation context\" 2026-05-20 14:30:00 \"first statement\")]))",
+        "(RecordProvenancesObserved ([((1 workspace Decision [summary only] Maximum) [current implementation context] 2026-05-20 14:30:00 [first statement])]))",
     );
     round_trip_nota(
         Reply::TopicsObserved(TopicsObserved {
@@ -378,7 +378,7 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         Event::RecordCaptured(RecordCaptured { record: summary() }),
-        "(RecordCaptured ((1 workspace Decision \"summary only\" Maximum)))",
+        "(RecordCaptured ((1 workspace Decision [summary only] Maximum)))",
     );
     round_trip_nota(
         Event::EffectEmitted(EffectEmitted {
@@ -391,7 +391,7 @@ fn spirit_canonical_examples_round_trip() {
 #[test]
 fn record_request_with_client_timestamp_shape_is_rejected() {
     let mut decoder = Decoder::new(
-        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum 1779000000 \"first statement\"))",
+        "(Record (workspace Decision [summary only] [current implementation context] Maximum 1779000000 [first statement]))",
     );
     Operation::decode(&mut decoder).expect_err("client timestamp must not decode");
 }
@@ -399,7 +399,7 @@ fn record_request_with_client_timestamp_shape_is_rejected() {
 #[test]
 fn record_request_with_parenthesized_client_date_time_shape_is_rejected() {
     let mut decoder = Decoder::new(
-        "(Record (workspace Decision \"summary only\" \"current implementation context\" Maximum (2026 5 20) (14 30 0) \"first statement\"))",
+        "(Record (workspace Decision [summary only] [current implementation context] Maximum (2026 5 20) (14 30 0) [first statement]))",
     );
     Operation::decode(&mut decoder).expect_err("parenthesized client date/time must not decode");
 }
