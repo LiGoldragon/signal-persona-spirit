@@ -18,6 +18,7 @@ signal-sema  = { git = "https://github.com/LiGoldragon/signal-sema.git", branch 
 nota-codec   = { git = "https://github.com/LiGoldragon/nota-codec.git", branch = "main" }
 rkyv         = { version = "0.8", default-features = false, features = ["std", "bytecheck", "little_endian", "pointer_width_32", "unaligned"] }
 thiserror    = "2"
+version-projection = { git = "https://github.com/LiGoldragon/version-projection.git", branch = "main" }
 
 [lints.rust]
 unsafe_code = "forbid"
