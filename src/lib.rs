@@ -430,39 +430,4 @@ pub struct EffectEmitted {
     pub observation: SemaObservation,
 }
 
-signal_channel! {
-    channel Spirit {
-        operation State(Statement),
-        operation Record(Entry),
-        operation Observe(Observation),
-        operation Watch(Subscription) opens DomainStream,
-        operation Unwatch(SubscriptionToken),
-    }
-    reply Reply {
-        RecordAccepted(RecordAccepted),
-        StateObserved(StateObserved),
-        RecordsObserved(RecordsObserved),
-        RecordProvenancesObserved(RecordProvenancesObserved),
-        TopicsObserved(TopicsObserved),
-        QuestionsObserved(QuestionsObserved),
-        SubscriptionOpened(SubscriptionOpened),
-        SubscriptionRetracted(SubscriptionRetracted),
-        RequestUnimplemented(RequestUnimplemented),
-    }
-    event Event {
-        StateChanged(StateChanged) belongs DomainStream,
-        RecordCaptured(RecordCaptured) belongs DomainStream,
-    }
-    stream DomainStream {
-        token SubscriptionToken;
-        opened SubscriptionOpened;
-        event StateChanged;
-        event RecordCaptured;
-        close Unwatch;
-    }
-    observable {
-        filter default;
-        operation_event OperationReceived;
-        effect_event EffectEmitted;
-    }
-}
+signal_channel!([schema]);
