@@ -1,5 +1,5 @@
-(Schema
-  (Channel
+(
+  (
     (Operation
       (State (Statement (engine assert)))
       (Record (Entry (engine assert)))
@@ -27,9 +27,8 @@
       (operation_event OperationReceived)
       (effect_event EffectEmitted)))
 
-  (Namespace
-    {
-      Magnitude [schemas/signal-sema/magnitude.schema.nota]
+  {
+      Magnitude (Path schemas/signal-sema/magnitude.schema.nota)
 
       Kind (Kind Decision Principle Correction Clarification Constraint)
       ObservationMode (ObservationMode SummaryOnly WithProvenance)
@@ -75,4 +74,4 @@
 
       StateChanged (StateChanged State)
       RecordCaptured (RecordCaptured RecordSummary)
-    }))
+    })
