@@ -1,13 +1,14 @@
 {
-  Magnitude (Path schemas/signal-sema/magnitude.schema)
+  Magnitude (ImportAll schemas/signal-sema/magnitude.schema)
+  SemaSet (Import schemas/signal-sema/sema.schema [SemaOperation SemaOutcome SemaObservation])
 }
 
 [
-  (State Statement)
-  (Record Entry)
-  (Observe Observation)
-  (Watch Subscription)
-  (Unwatch SubscriptionToken)
+  (State [Statement])
+  (Record [Entry])
+  (Observe [Observation])
+  (Watch [Subscription])
+  (Unwatch [SubscriptionToken])
 ]
 
 []
@@ -15,6 +16,12 @@
 []
 
 {
+  State [(Statement Statement)]
+  Record [(Entry Entry)]
+  Observe [(Observation Observation)]
+  Watch [(Subscription Subscription)]
+  Unwatch [(SubscriptionToken SubscriptionToken)]
+
   Kind [Decision Principle Correction Clarification Constraint]
   ObservationMode [SummaryOnly WithProvenance]
   Presence [Active Absent]
@@ -34,12 +41,12 @@
 
   Entry (Topic Kind Summary Context Magnitude Quote)
   Statement (StatementText)
-  RecordQuery ([Option Topic] [Option Kind] ObservationMode)
-  RecordSubscription ([Option Topic] ObservationMode)
+  RecordQuery ((Option Topic) (Option Kind) ObservationMode)
+  RecordObservation (RecordQuery)
+  RecordSubscription ((Option Topic) ObservationMode)
   RecordSummary (RecordIdentifier Topic Kind Summary Magnitude)
   RecordProvenance (RecordSummary Context Date Time Quote)
   TopicCount (Topic u64)
-  State (Presence [Option FocusArea])
   QuestionSummary (QuestionIdentifier QuestionText)
 
   Observation [State (Records RecordQuery) Topics Questions]
@@ -48,17 +55,20 @@
 
   RecordAccepted (RecordIdentifier)
   StateObserved (State)
-  RecordsObserved ([Vec RecordSummary])
-  RecordProvenancesObserved ([Vec RecordProvenance])
-  TopicsObserved ([Vec TopicCount])
-  QuestionsObserved ([Vec QuestionSummary])
+  RecordsObserved ((Vec RecordSummary))
+  RecordProvenancesObserved ((Vec RecordProvenance))
+  TopicsObserved ((Vec TopicCount))
+  QuestionsObserved ((Vec QuestionSummary))
   SubscriptionOpened (SubscriptionToken SubscriptionSnapshot)
   SubscriptionRetracted (SubscriptionToken)
   RequestUnimplemented (UnimplementedReason)
-  SubscriptionSnapshot [(State State) (Records [Vec RecordSummary])]
+  SubscriptionSnapshot [(State State) (Records (Vec RecordSummary))]
 
   StateChanged (State)
   RecordCaptured (RecordSummary)
+  OperationKind [State Record Observe Watch Unwatch]
+  OperationReceived (OperationKind)
+  EffectEmitted (SemaObservation)
 }
 
 [
