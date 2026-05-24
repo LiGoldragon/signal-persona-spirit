@@ -1,0 +1,49 @@
+{}
+
+[
+  (State [Statement])
+  (Record [Entry])
+  (Observe [Observation])
+  (Watch [Subscription])
+  (Unwatch [SubscriptionToken])
+]
+
+[]
+
+[]
+
+{
+  State [(Statement Statement)]
+  Record [(Entry Entry)]
+  Observe [(Observation Observation)]
+  Watch [(Subscription Subscription)]
+  Unwatch [(SubscriptionToken SubscriptionToken)]
+  Kind [Decision Principle Correction Clarification Constraint]
+  Magnitude [Minimum VeryLow Low Medium High VeryHigh Maximum]
+  ObservationMode [SummaryOnly WithProvenance]
+  Topic (String)
+  Summary (String)
+  Context (String)
+  Quote (String)
+  StatementText (String)
+  Entry (Topic Kind Summary Context Magnitude Quote)
+  Statement (StatementText)
+  Observation ((Option Topic) (Option Kind) ObservationMode)
+  Subscription ((Option Topic) ObservationMode)
+  SubscriptionToken (u64)
+  Start (Text)
+  Drain (Text)
+  BootstrapPolicy (Text)
+  Registration (Text)
+  Retirement (Text)
+  Text (String)
+  Identifier (u64)
+  Name (String)
+  Path (String)
+  Status [Concept Active Retired]
+}
+
+[
+  (Version 0 1)
+  (Status Concept)
+]
