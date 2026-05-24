@@ -4,9 +4,88 @@ use signal_frame::{
 };
 use signal_persona_spirit::{
     Context, Entry, Frame, FrameBody, Kind, Observation, ObservationMode, Operation, OperationKind,
-    Quote, RecordQuery, Statement, StatementText, Summary, Topic,
+    Quote, RecordQuery, Reply, RequestUnimplemented, Statement, StatementText, Summary, Topic,
+    UnimplementedReason,
 };
 use signal_sema::Magnitude;
+
+#[derive(Debug, thiserror::Error)]
+enum DispatchError {
+    #[error(transparent)]
+    Dispatch(#[from] signal_frame::OperationDispatchError),
+}
+
+#[derive(Default)]
+struct DispatchWitness {
+    handled: Vec<OperationKind>,
+}
+
+impl signal_persona_spirit::OperationHandler for DispatchWitness {
+    type Error = DispatchError;
+
+    async fn handle_state(&mut self, _payload: Statement) -> Result<Reply, Self::Error> {
+        self.handled.push(OperationKind::State);
+        Ok(unimplemented_reply())
+    }
+
+    async fn handle_record(&mut self, _payload: Entry) -> Result<Reply, Self::Error> {
+        self.handled.push(OperationKind::Record);
+        Ok(unimplemented_reply())
+    }
+
+    async fn handle_observe(&mut self, _payload: Observation) -> Result<Reply, Self::Error> {
+        self.handled.push(OperationKind::Observe);
+        Ok(unimplemented_reply())
+    }
+
+    async fn handle_watch(
+        &mut self,
+        _payload: signal_persona_spirit::Subscription,
+    ) -> Result<Reply, Self::Error> {
+        self.handled.push(OperationKind::Watch);
+        Ok(unimplemented_reply())
+    }
+
+    async fn handle_unwatch(
+        &mut self,
+        _payload: signal_persona_spirit::SubscriptionToken,
+    ) -> Result<Reply, Self::Error> {
+        self.handled.push(OperationKind::Unwatch);
+        Ok(unimplemented_reply())
+    }
+
+    async fn handle_tap(
+        &mut self,
+        _payload: signal_persona_spirit::ObserverFilter,
+    ) -> Result<Reply, Self::Error> {
+        self.handled.push(OperationKind::Tap);
+        Ok(unimplemented_reply())
+    }
+
+    async fn handle_untap(
+        &mut self,
+        _payload: signal_persona_spirit::ObserverSubscriptionToken,
+    ) -> Result<Reply, Self::Error> {
+        self.handled.push(OperationKind::Untap);
+        Ok(unimplemented_reply())
+    }
+}
+
+fn block_on_ready<Output>(future: impl std::future::Future<Output = Output>) -> Output {
+    struct NoopWake;
+
+    impl std::task::Wake for NoopWake {
+        fn wake(self: std::sync::Arc<Self>) {}
+    }
+
+    let waker = std::task::Waker::from(std::sync::Arc::new(NoopWake));
+    let mut context = std::task::Context::from_waker(&waker);
+    let mut future = Box::pin(future);
+    match future.as_mut().poll(&mut context) {
+        std::task::Poll::Ready(output) => output,
+        std::task::Poll::Pending => panic!("test future unexpectedly yielded"),
+    }
+}
 
 fn exchange() -> ExchangeIdentifier {
     ExchangeIdentifier::new(
@@ -25,6 +104,12 @@ fn entry() -> Entry {
         certainty: Magnitude::Maximum,
         quote: Quote::new("header witness"),
     }
+}
+
+fn unimplemented_reply() -> Reply {
+    Reply::RequestUnimplemented(RequestUnimplemented {
+        reason: UnimplementedReason::NotBuiltYet,
+    })
 }
 
 fn header(bytes: [u8; 8]) -> ShortHeader {
@@ -71,6 +156,31 @@ fn receive_side_triage_matches_header_root_before_body_decode() {
         Operation::kind_from_short_header(header([99, 0, 0, 0, 0, 0, 0, 0])),
         None
     );
+}
+
+#[test]
+fn generated_operation_dispatch_routes_by_short_header() {
+    use signal_persona_spirit::OperationDispatch;
+
+    let mut witness = DispatchWitness::default();
+    let reply = block_on_ready(witness.dispatch(ShortHeader::new(1), Operation::Record(entry())))
+        .expect("dispatch record");
+
+    assert_eq!(witness.handled, vec![OperationKind::Record]);
+    assert_eq!(reply, unimplemented_reply());
+
+    let mismatch =
+        block_on_ready(witness.dispatch(ShortHeader::new(0), Operation::Record(entry())))
+            .expect_err("mismatch rejected");
+    assert!(matches!(
+        mismatch,
+        DispatchError::Dispatch(
+            signal_frame::OperationDispatchError::HeaderOperationMismatch {
+                expected: 0,
+                actual: 1
+            }
+        )
+    ));
 }
 
 #[test]
