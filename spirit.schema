@@ -1,18 +1,18 @@
+{
+  Magnitude (Path schemas/signal-sema/magnitude.schema)
+}
+
 [
-  (State [Statement])
-  (Record [Entry])
-  (Observe [Observation])
-  (Watch [Subscription])
-  (Unwatch [SubscriptionToken])
+  (State Statement)
+  (Record Entry)
+  (Observe Observation)
+  (Watch Subscription)
+  (Unwatch SubscriptionToken)
 ]
 
 []
 
 []
-
-{
-  Magnitude (Path schemas/signal-sema/magnitude.schema)
-}
 
 {
   Kind [Decision Principle Correction Clarification Constraint]
