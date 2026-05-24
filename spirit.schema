@@ -1,0 +1,84 @@
+[
+  (State (Statement (engine assert)))
+  (Record (Entry (engine assert)))
+  (Observe (Observation (engine match)))
+  (Watch (Subscription (engine subscribe)))
+  (Unwatch (SubscriptionToken (engine retract)))
+]
+
+[]
+
+[]
+
+{
+  Magnitude (Path schemas/signal-sema/magnitude.schema)
+}
+
+{
+  Kind [Decision Principle Correction Clarification Constraint]
+  ObservationMode [SummaryOnly WithProvenance]
+  Presence [Active Absent]
+  UnimplementedReason [NotBuiltYet IntegrationNotLanded]
+
+  Topic (String)
+  Summary (String)
+  Context (String)
+  Quote (String)
+  StatementText (String)
+  FocusArea (String)
+  RecordIdentifier (u64)
+  QuestionIdentifier (String)
+  QuestionText (String)
+  StateSubscriptionToken (u64)
+  RecordSubscriptionToken (u64)
+
+  Entry (Topic Kind Summary Context Magnitude Quote)
+  Statement (StatementText)
+  RecordQuery ([Option Topic] [Option Kind] ObservationMode)
+  RecordSubscription ([Option Topic] ObservationMode)
+  RecordSummary (RecordIdentifier Topic Kind Summary Magnitude)
+  RecordProvenance (RecordSummary Context Date Time Quote)
+  TopicCount (Topic u64)
+  State (Presence [Option FocusArea])
+  QuestionSummary (QuestionIdentifier QuestionText)
+
+  Observation [State (Records RecordQuery) Topics Questions]
+  Subscription [State (Records RecordSubscription)]
+  SubscriptionToken [(State StateSubscriptionToken) (Records RecordSubscriptionToken)]
+
+  RecordAccepted (RecordIdentifier)
+  StateObserved (State)
+  RecordsObserved ([Vec RecordSummary])
+  RecordProvenancesObserved ([Vec RecordProvenance])
+  TopicsObserved ([Vec TopicCount])
+  QuestionsObserved ([Vec QuestionSummary])
+  SubscriptionOpened (SubscriptionToken SubscriptionSnapshot)
+  SubscriptionRetracted (SubscriptionToken)
+  RequestUnimplemented (UnimplementedReason)
+  SubscriptionSnapshot [(State State) (Records [Vec RecordSummary])]
+
+  StateChanged (State)
+  RecordCaptured (RecordSummary)
+}
+
+[
+  (Reply
+    RecordAccepted
+    StateObserved
+    RecordsObserved
+    RecordProvenancesObserved
+    TopicsObserved
+    QuestionsObserved
+    SubscriptionOpened
+    SubscriptionRetracted
+    RequestUnimplemented)
+
+  (Event (belongs DomainStream)
+    StateChanged
+    RecordCaptured)
+
+  (Observable
+    (filter default)
+    (operation_event OperationReceived)
+    (effect_event EffectEmitted))
+]
