@@ -1,83 +1,78 @@
-[
-  (Operation
-    (State Statement)
-    (Record Entry)
-    (Observe Observation)
-    (Watch Subscription)
-    (Unwatch SubscriptionToken))
+(Schema
+  (Channel
+    (Operation
+      (State (Statement (engine assert)))
+      (Record (Entry (engine assert)))
+      (Observe (Observation (engine match)))
+      (Watch (Subscription (engine subscribe)))
+      (Unwatch (SubscriptionToken (engine retract))))
 
-  (Reply
-    (RecordAccepted RecordAccepted)
-    (StateObserved StateObserved)
-    (RecordsObserved RecordsObserved)
-    (RecordProvenancesObserved RecordProvenancesObserved)
-    (TopicsObserved TopicsObserved)
-    (QuestionsObserved QuestionsObserved)
-    (SubscriptionOpened SubscriptionOpened)
-    (SubscriptionRetracted SubscriptionRetracted)
-    (RequestUnimplemented RequestUnimplemented))
+    (Reply
+      (RecordAccepted RecordAccepted)
+      (StateObserved StateObserved)
+      (RecordsObserved RecordsObserved)
+      (RecordProvenancesObserved RecordProvenancesObserved)
+      (TopicsObserved TopicsObserved)
+      (QuestionsObserved QuestionsObserved)
+      (SubscriptionOpened SubscriptionOpened)
+      (SubscriptionRetracted SubscriptionRetracted)
+      (RequestUnimplemented RequestUnimplemented))
 
-  (Event
-    (StateChanged (StateChanged belongs DomainStream))
-    (RecordCaptured (RecordCaptured belongs DomainStream)))
+    (Event
+      (StateChanged (StateChanged belongs DomainStream))
+      (RecordCaptured (RecordCaptured belongs DomainStream)))
 
-  (Kind Decision Principle Correction Clarification Constraint)
-  (ObservationMode SummaryOnly WithProvenance)
-  (Presence Active Absent)
-  (UnimplementedReason NotBuiltYet IntegrationNotLanded)
+    (Observable
+      (filter default)
+      (operation_event OperationReceived)
+      (effect_event EffectEmitted)))
 
-  (Magnitude [schemas/signal-sema/magnitude.schema.nota])
+  (Namespace
+    {
+      Magnitude [schemas/signal-sema/magnitude.schema.nota]
 
-  (Topic (Topic String))
-  (Summary (Summary String))
-  (Context (Context String))
-  (Quote (Quote String))
-  (StatementText (StatementText String))
-  (RecordIdentifier (RecordIdentifier u64))
-  (QuestionIdentifier (QuestionIdentifier String))
-  (QuestionText (QuestionText String))
-  (FocusArea (FocusArea String))
-  (StateSubscriptionToken (StateSubscriptionToken u64))
-  (RecordSubscriptionToken (RecordSubscriptionToken u64))
+      Kind (Kind Decision Principle Correction Clarification Constraint)
+      ObservationMode (ObservationMode SummaryOnly WithProvenance)
+      Presence (Presence Active Absent)
+      UnimplementedReason (UnimplementedReason NotBuiltYet IntegrationNotLanded)
 
-  (Entry (Entry Topic Kind Summary Context Magnitude Quote))
-  (Statement (Statement StatementText))
-  (RecordQuery (RecordQuery [Option Topic] [Option Kind] ObservationMode))
-  (RecordSubscription (RecordSubscription [Option Topic] ObservationMode))
-  (RecordSummary (RecordSummary RecordIdentifier Topic Kind Summary Magnitude))
-  (RecordProvenance (RecordProvenance RecordSummary Context Date Time Quote))
-  (TopicCount (TopicCount Topic u64))
-  (State (State Presence [Option FocusArea]))
-  (QuestionSummary (QuestionSummary QuestionIdentifier QuestionText))
+      Topic (Topic String)
+      Summary (Summary String)
+      Context (Context String)
+      Quote (Quote String)
+      StatementText (StatementText String)
+      RecordIdentifier (RecordIdentifier u64)
+      QuestionIdentifier (QuestionIdentifier String)
+      QuestionText (QuestionText String)
+      FocusArea (FocusArea String)
+      StateSubscriptionToken (StateSubscriptionToken u64)
+      RecordSubscriptionToken (RecordSubscriptionToken u64)
 
-  (Observation
-    State
-    (Records RecordQuery)
-    Topics
-    Questions)
+      Entry (Entry Topic Kind Summary Context Magnitude Quote)
+      Statement (Statement StatementText)
+      RecordQuery (RecordQuery [Option Topic] [Option Kind] ObservationMode)
+      RecordSubscription (RecordSubscription [Option Topic] ObservationMode)
+      RecordSummary (RecordSummary RecordIdentifier Topic Kind Summary Magnitude)
+      RecordProvenance (RecordProvenance RecordSummary Context Date Time Quote)
+      TopicCount (TopicCount Topic u64)
+      State (State Presence [Option FocusArea])
+      QuestionSummary (QuestionSummary QuestionIdentifier QuestionText)
 
-  (Subscription
-    State
-    (Records RecordSubscription))
+      Observation (Observation State (Records RecordQuery) Topics Questions)
+      Subscription (Subscription State (Records RecordSubscription))
+      SubscriptionToken (SubscriptionToken (State StateSubscriptionToken) (Records RecordSubscriptionToken))
 
-  (SubscriptionToken
-    (State StateSubscriptionToken)
-    (Records RecordSubscriptionToken))
+      RecordAccepted (RecordAccepted RecordIdentifier)
+      StateObserved (StateObserved State)
+      RecordsObserved (RecordsObserved [Vec RecordSummary])
+      RecordProvenancesObserved (RecordProvenancesObserved [Vec RecordProvenance])
+      TopicsObserved (TopicsObserved [Vec TopicCount])
+      QuestionsObserved (QuestionsObserved [Vec QuestionSummary])
+      SubscriptionOpened (SubscriptionOpened SubscriptionToken SubscriptionSnapshot)
+      SubscriptionRetracted (SubscriptionRetracted SubscriptionToken)
+      RequestUnimplemented (RequestUnimplemented UnimplementedReason)
+      SubscriptionSnapshot (SubscriptionSnapshot (State State) (Records [Vec RecordSummary]))
 
-  (RecordAccepted (RecordAccepted RecordIdentifier))
-  (StateObserved (StateObserved State))
-  (RecordsObserved (RecordsObserved [Vec RecordSummary]))
-  (RecordProvenancesObserved (RecordProvenancesObserved [Vec RecordProvenance]))
-  (TopicsObserved (TopicsObserved [Vec TopicCount]))
-  (QuestionsObserved (QuestionsObserved [Vec QuestionSummary]))
-  (SubscriptionOpened (SubscriptionOpened SubscriptionToken SubscriptionSnapshot))
-  (SubscriptionRetracted (SubscriptionRetracted SubscriptionToken))
-  (RequestUnimplemented (RequestUnimplemented UnimplementedReason))
-
-  (SubscriptionSnapshot
-    (State State)
-    (Records [Vec RecordSummary]))
-
-  (StateChanged (StateChanged State))
-  (RecordCaptured (RecordCaptured RecordSummary))
-]
+      StateChanged (StateChanged State)
+      RecordCaptured (RecordCaptured RecordSummary)
+    }))
