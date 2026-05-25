@@ -25,3 +25,13 @@ version-projection = { git = "https://github.com/LiGoldragon/version-projection.
 unsafe_code = "forbid"
 unused      = { level = "warn", priority = -1 }
 dead_code   = "warn"
+
+# POC override (psyche 2026-05-26 + intent records 709, 710): point
+# signal-frame + schema at the local POC worktrees so the extended
+# universal-Unknown carrier check (Reply + Response) reaches this crate
+# without a publish cycle. Production stack keeps upstream pins.
+[patch."https://github.com/LiGoldragon/signal-frame.git"]
+signal-frame = { path = "/home/li/wt/github.com/LiGoldragon/signal-frame/designer-schema-poc-106-2026-05-26" }
+
+[patch."https://github.com/LiGoldragon/schema.git"]
+schema = { path = "/home/li/wt/github.com/LiGoldragon/schema/designer-schema-poc-from-v0.3-main-2026-05-26" }

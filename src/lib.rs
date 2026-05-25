@@ -7,7 +7,7 @@
 
 use nota_codec::{Decoder, Encoder, NotaDecode, NotaEncode, NotaEnum, NotaRecord, NotaTransparent};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
-use signal_frame::signal_channel;
+use signal_frame::{emit_schema, signal_channel};
 use signal_sema::{Magnitude, SemaObservation};
 
 pub mod migration;
@@ -462,3 +462,22 @@ pub struct EffectEmitted {
 }
 
 signal_channel!([schema]);
+
+// Schema-driven dual emission per psyche 2026-05-26 + intent records
+// 709, 710 (the three-language POC). The wire schema (`spirit.schema`)
+// IS the WIRE LANGUAGE — the first of three languages. The
+// `emit_schema!()` invocation reads the same schema file and emits a
+// `pub mod spirit { … }` carrying the schema-derived types alongside
+// the legacy `signal_channel!([schema])` emission at crate root.
+//
+// Downstream consumers reach for one path or the other without a
+// forced cutover:
+//
+//   Legacy:  signal_persona_spirit::Operation
+//   Schema:  signal_persona_spirit::spirit::Operation
+//
+// The schema engine's extended universal-Unknown carrier check
+// (`is_universal_unknown_carrier_name`) injects `Unknown(String)` into
+// the schema-driven `Reply` enum — the wire-forward-compat floor that
+// mirrors the actor RESPONSE floor on the internal-channel side.
+emit_schema!();
