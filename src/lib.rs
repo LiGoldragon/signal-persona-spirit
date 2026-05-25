@@ -42,9 +42,7 @@ impl Topic {
     }
 }
 
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
-)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Topics(Vec<Topic>);
 
 impl Topics {
@@ -66,6 +64,41 @@ impl Topics {
 
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+
+    fn validate(value: &[Topic]) -> nota_codec::Result<()> {
+        if value.is_empty() {
+            return Err(nota_codec::Error::Validation {
+                type_name: "Topics",
+                message: "record must carry at least one topic".to_string(),
+            });
+        }
+
+        let mut seen = std::collections::BTreeSet::<&str>::new();
+        for topic in value {
+            if !seen.insert(topic.as_str()) {
+                return Err(nota_codec::Error::Validation {
+                    type_name: "Topics",
+                    message: format!("record repeats topic {}", topic.as_str()),
+                });
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl NotaEncode for Topics {
+    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
+        self.0.encode(encoder)
+    }
+}
+
+impl NotaDecode for Topics {
+    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
+        let value = Vec::<Topic>::decode(decoder)?;
+        Self::validate(&value)?;
+        Ok(Self(value))
     }
 }
 

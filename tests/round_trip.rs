@@ -404,6 +404,30 @@ fn record_request_with_client_timestamp_shape_is_rejected() {
 }
 
 #[test]
+fn record_request_with_duplicate_topics_is_rejected() {
+    let mut decoder = Decoder::new("(Record ([spirit spirit] Decision [duplicate] Maximum))");
+    let error = Operation::decode(&mut decoder).expect_err("duplicate topics must not decode");
+
+    assert!(
+        error.to_string().contains("record repeats topic spirit"),
+        "unexpected error: {error}"
+    );
+}
+
+#[test]
+fn record_request_with_empty_topics_is_rejected() {
+    let mut decoder = Decoder::new("(Record ([] Decision [missing topic] Maximum))");
+    let error = Operation::decode(&mut decoder).expect_err("empty topics must not decode");
+
+    assert!(
+        error
+            .to_string()
+            .contains("record must carry at least one topic"),
+        "unexpected error: {error}"
+    );
+}
+
+#[test]
 fn record_request_with_parenthesized_client_date_time_shape_is_rejected() {
     let mut decoder = Decoder::new(
         "(Record ([workspace] Decision [description only] Maximum (2026 5 20) (14 30 0)))",
