@@ -13,7 +13,11 @@
 
 []
 
-[]
+[
+  (Project (AssertEntry MatchRecords MatchTopics MatchState MatchQuestions OpenSubscription CloseSubscription))
+  (Emit (EntryAsserted RecordsMatched TopicsMatched StateMatched QuestionsMatched SubscriptionOpenedEffect SubscriptionRetractedEffect RequestFailed))
+  (Respond (RecordAccepted StateObserved RecordsObserved RecordProvenancesObserved TopicsObserved QuestionsObserved SubscriptionOpened SubscriptionRetracted RequestUnimplemented))
+]
 
 {
   State ((Statement))
@@ -21,6 +25,9 @@
   Observe ((Observation))
   Watch ((Subscription))
   Unwatch ((SubscriptionToken))
+  Project ((AssertEntry Entry) (MatchRecords RecordQuery) MatchTopics MatchState MatchQuestions (OpenSubscription Subscription) (CloseSubscription SubscriptionToken))
+  Emit ((EntryAsserted RecordDescription) (RecordsMatched RecordsObserved) (TopicsMatched TopicsObserved) (StateMatched StateObserved) (QuestionsMatched QuestionsObserved) (SubscriptionOpenedEffect SubscriptionOpened) (SubscriptionRetractedEffect SubscriptionRetracted) (RequestFailed RequestUnimplemented))
+  Respond ((RecordAccepted) (StateObserved) (RecordsObserved) (RecordProvenancesObserved) (TopicsObserved) (QuestionsObserved) (SubscriptionOpened) (SubscriptionRetracted) (RequestUnimplemented))
 
   Kind (Decision Principle Correction Clarification Constraint)
   ObservationMode (DescriptionOnly WithProvenance)
@@ -93,4 +100,24 @@
     (filter default)
     (operation_event OperationReceived)
     (effect_event EffectEmitted))
+
+  (EffectTable [
+    (AssertEntry EntryAsserted)
+    (MatchRecords RecordsMatched)
+    (MatchTopics TopicsMatched)
+    (MatchState StateMatched)
+    (MatchQuestions QuestionsMatched)
+    (OpenSubscription SubscriptionOpenedEffect)
+    (CloseSubscription SubscriptionRetractedEffect)
+  ])
+
+  (FanOutTargets [
+    (EntryAsserted [(Reply RecordAccepted)])
+    (RecordsMatched [(Reply RecordsObserved)])
+    (TopicsMatched [(Reply TopicsObserved)])
+    (StateMatched [(Reply StateObserved)])
+    (QuestionsMatched [(Reply QuestionsObserved)])
+    (SubscriptionOpenedEffect [(Reply SubscriptionOpened)])
+    (SubscriptionRetractedEffect [(Reply SubscriptionRetracted)])
+  ])
 ]
