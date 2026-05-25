@@ -1,5 +1,8 @@
 use nota_codec::{Decoder, NotaDecode};
-use signal_persona_spirit::{Entry, Kind, Operation, migration::V010ToV011, migration::v010};
+use signal_persona_spirit::{
+    Entry, Kind, Operation,
+    migration::{V010ToV011, V020ToV030, v010, v020},
+};
 use signal_sema::Magnitude;
 use version_projection::VersionProjection;
 
@@ -29,7 +32,8 @@ fn v010_record_entry_projects_to_current_entry_shape() {
 
     let current = <V010ToV011 as VersionProjection<v010::Entry, Entry>>::project(source).unwrap();
 
-    assert_eq!(current.topic.as_str(), "workspace");
+    assert_eq!(current.topics.as_slice().len(), 1);
+    assert_eq!(current.topics.as_slice()[0].as_str(), "workspace");
     assert_eq!(current.kind, Kind::Decision);
     assert_eq!(current.description.as_str(), "description");
     assert_eq!(current.certainty, Magnitude::Maximum);
@@ -37,8 +41,9 @@ fn v010_record_entry_projects_to_current_entry_shape() {
 
 #[test]
 fn v010_nota_record_projects_to_current_operation() {
-    let mut decoder =
-        Decoder::new("(Record (workspace Decision [description] [context dropped] Medium [quote dropped]))");
+    let mut decoder = Decoder::new(
+        "(Record (workspace Decision [description] [context dropped] Medium [quote dropped]))",
+    );
     let source = v010::Operation::decode(&mut decoder).unwrap();
 
     let current =
@@ -49,4 +54,26 @@ fn v010_nota_record_projects_to_current_operation() {
     };
     assert_eq!(entry.certainty, Magnitude::Medium);
     assert_eq!(entry.description.as_str(), "description");
+    assert_eq!(entry.topics.as_slice()[0].as_str(), "workspace");
+}
+
+#[test]
+fn v020_record_entry_projects_to_multi_topic_current_entry_shape() {
+    let source = v020::Entry {
+        topic: v020::Topic::new("spirit"),
+        kind: v020::Kind::Correction,
+        description: v020::Description::new("single topic becomes topic vector"),
+        certainty: Magnitude::High,
+    };
+
+    let current = <V020ToV030 as VersionProjection<v020::Entry, Entry>>::project(source).unwrap();
+
+    assert_eq!(current.topics.as_slice().len(), 1);
+    assert_eq!(current.topics.as_slice()[0].as_str(), "spirit");
+    assert_eq!(current.kind, Kind::Correction);
+    assert_eq!(
+        current.description.as_str(),
+        "single topic becomes topic vector"
+    );
+    assert_eq!(current.certainty, Magnitude::High);
 }

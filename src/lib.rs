@@ -43,6 +43,33 @@ impl Topic {
 }
 
 #[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+)]
+pub struct Topics(Vec<Topic>);
+
+impl Topics {
+    pub fn new(value: Vec<Topic>) -> Self {
+        Self(value)
+    }
+
+    pub fn single(topic: Topic) -> Self {
+        Self(vec![topic])
+    }
+
+    pub fn as_slice(&self) -> &[Topic] {
+        &self.0
+    }
+
+    pub fn contains(&self, topic: &Topic) -> bool {
+        self.0.iter().any(|candidate| candidate == topic)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+#[derive(
     Archive,
     RkyvSerialize,
     RkyvDeserialize,
@@ -203,7 +230,7 @@ pub struct Statement {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct Entry {
-    pub topic: Topic,
+    pub topics: Topics,
     pub kind: Kind,
     pub description: Description,
     pub certainty: Magnitude,
@@ -230,7 +257,7 @@ pub struct RecordSubscription {
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordDescription {
     pub identifier: RecordIdentifier,
-    pub topic: Topic,
+    pub topics: Topics,
     pub kind: Kind,
     pub description: Description,
     pub certainty: Magnitude,

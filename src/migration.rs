@@ -3,7 +3,7 @@
 use signal_sema::Magnitude;
 use version_projection::{ProjectionError, VersionProjection};
 
-use crate::{Description, Entry, Kind, Operation, Statement, Topic};
+use crate::{Description, Entry, Kind, Operation, Statement, Topic, Topics};
 
 pub mod v010 {
     use nota_codec::{NotaEnum, NotaRecord, NotaTransparent};
@@ -109,7 +109,80 @@ pub mod v010 {
     }
 }
 
+pub mod v020 {
+    use nota_codec::{NotaEnum, NotaRecord, NotaTransparent};
+    use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+    use signal_sema::Magnitude;
+
+    #[derive(
+        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    )]
+    pub struct Topic(String);
+
+    impl Topic {
+        pub fn new(value: impl Into<String>) -> Self {
+            Self(value.into())
+        }
+
+        pub fn into_current(self) -> crate::Topic {
+            crate::Topic::new(self.0)
+        }
+    }
+
+    #[derive(
+        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    )]
+    pub struct Description(String);
+
+    impl Description {
+        pub fn new(value: impl Into<String>) -> Self {
+            Self(value.into())
+        }
+
+        pub fn into_current(self) -> crate::Description {
+            crate::Description::new(self.0)
+        }
+    }
+
+    #[derive(
+        Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    )]
+    pub enum Kind {
+        Decision,
+        Principle,
+        Correction,
+        Clarification,
+        Constraint,
+    }
+
+    impl From<Kind> for crate::Kind {
+        fn from(value: Kind) -> Self {
+            match value {
+                Kind::Decision => Self::Decision,
+                Kind::Principle => Self::Principle,
+                Kind::Correction => Self::Correction,
+                Kind::Clarification => Self::Clarification,
+                Kind::Constraint => Self::Constraint,
+            }
+        }
+    }
+
+    #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+    pub struct Entry {
+        pub topic: Topic,
+        pub kind: Kind,
+        pub description: Description,
+        pub certainty: Magnitude,
+    }
+
+    #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+    pub enum Operation {
+        Record(Entry),
+    }
+}
+
 pub struct V010ToV011;
+pub struct V020ToV030;
 
 impl From<v010::Certainty> for Magnitude {
     fn from(value: v010::Certainty) -> Self {
@@ -126,7 +199,7 @@ impl VersionProjection<v010::Entry, Entry> for V010ToV011 {
 
     fn project(source: v010::Entry) -> Result<Entry, Self::Error> {
         Ok(Entry {
-            topic: source.topic.into_current(),
+            topics: Topics::single(source.topic.into_current()),
             kind: source.kind.into(),
             description: source.summary.into_description(),
             certainty: source.certainty.into(),
@@ -147,6 +220,32 @@ impl VersionProjection<v010::Operation, Operation> for V010ToV011 {
     }
 }
 
+impl VersionProjection<v020::Entry, Entry> for V020ToV030 {
+    type Error = ProjectionError;
+
+    fn project(source: v020::Entry) -> Result<Entry, Self::Error> {
+        Ok(Entry {
+            topics: Topics::single(source.topic.into_current()),
+            kind: source.kind.into(),
+            description: source.description.into_current(),
+            certainty: source.certainty,
+        })
+    }
+}
+
+impl VersionProjection<v020::Operation, Operation> for V020ToV030 {
+    type Error = ProjectionError;
+
+    fn project(source: v020::Operation) -> Result<Operation, Self::Error> {
+        match source {
+            v020::Operation::Record(entry) => Ok(Operation::Record(<Self as VersionProjection<
+                v020::Entry,
+                Entry,
+            >>::project(entry)?)),
+        }
+    }
+}
+
 impl VersionProjection<Statement, Statement> for V010ToV011 {
     type Error = std::convert::Infallible;
 
@@ -160,6 +259,14 @@ impl VersionProjection<Topic, Topic> for V010ToV011 {
 
     fn project(source: Topic) -> Result<Topic, Self::Error> {
         Ok(source)
+    }
+}
+
+impl VersionProjection<Topic, Topics> for V010ToV011 {
+    type Error = std::convert::Infallible;
+
+    fn project(source: Topic) -> Result<Topics, Self::Error> {
+        Ok(Topics::single(source))
     }
 }
 

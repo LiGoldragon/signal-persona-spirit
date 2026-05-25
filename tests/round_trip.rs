@@ -6,13 +6,13 @@ use signal_frame::{
 use signal_persona_spirit::{
     Date, Description, EffectEmitted, Entry, Event, FocusArea, Frame, FrameBody, Kind, Observation,
     ObservationMode, ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken, Operation,
-    OperationKind, OperationReceived, Presence, QuestionIdentifier, QuestionSummary, QuestionText,
-    QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier, RecordProvenance,
-    RecordProvenancesObserved, RecordQuery, RecordSubscription, RecordSubscriptionToken,
-    PresenceView, RecordsObserved, Reply, RequestUnimplemented, StateChanged, StateObserved,
-    StateSubscriptionToken, Statement, StatementText, Subscription, SubscriptionOpened,
-    SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time, Topic, TopicCount,
-    TopicsObserved, UnimplementedReason,
+    OperationKind, OperationReceived, Presence, PresenceView, QuestionIdentifier, QuestionSummary,
+    QuestionText, QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier,
+    RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
+    RecordSubscriptionToken, RecordsObserved, Reply, RequestUnimplemented, StateChanged,
+    StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
+    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time,
+    Topic, TopicCount, Topics, TopicsObserved, UnimplementedReason,
 };
 use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
@@ -29,7 +29,7 @@ fn exchange() -> ExchangeIdentifier {
 fn description() -> signal_persona_spirit::RecordDescription {
     signal_persona_spirit::RecordDescription {
         identifier: RecordIdentifier::new(1),
-        topic: Topic::new("workspace"),
+        topics: Topics::single(Topic::new("workspace")),
         kind: Kind::Decision,
         description: Description::new("description only"),
         certainty: Magnitude::Maximum,
@@ -46,7 +46,7 @@ fn provenance() -> RecordProvenance {
 
 fn entry() -> Entry {
     Entry {
-        topic: Topic::new("workspace"),
+        topics: Topics::single(Topic::new("workspace")),
         kind: Kind::Decision,
         description: Description::new("description only"),
         certainty: Magnitude::Maximum,
@@ -208,7 +208,9 @@ fn spirit_reply_payloads_convert_through_macro_generated_from_impls() {
 fn spirit_events_round_trip() {
     let events = [
         Event::StateChanged(StateChanged { state: state() }),
-        Event::RecordCaptured(RecordCaptured { record: description() }),
+        Event::RecordCaptured(RecordCaptured {
+            record: description(),
+        }),
         Event::OperationReceived(OperationReceived {
             operation: OperationKind::Record,
         }),
@@ -263,7 +265,10 @@ fn spirit_stream_witnesses_are_emitted() {
         Some(signal_persona_spirit::StreamKind::DomainStream)
     );
     assert_eq!(
-        Event::RecordCaptured(RecordCaptured { record: description() }).stream_kind(),
+        Event::RecordCaptured(RecordCaptured {
+            record: description()
+        })
+        .stream_kind(),
         signal_persona_spirit::StreamKind::DomainStream
     );
     assert_eq!(
@@ -306,14 +311,21 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         Operation::Record(entry()),
-        "(Record (workspace Decision [description only] Maximum))",
+        "(Record ([workspace] Decision [description only] Maximum))",
     );
     let mut high_entry = entry();
     high_entry.description = Description::new("high description");
     high_entry.certainty = Magnitude::High;
     round_trip_nota(
         Operation::Record(high_entry),
-        "(Record (workspace Decision [high description] High))",
+        "(Record ([workspace] Decision [high description] High))",
+    );
+    let mut multi_topic_entry = entry();
+    multi_topic_entry.topics = Topics::new(vec![Topic::new("spirit"), Topic::new("nota")]);
+    multi_topic_entry.description = Description::new("multi topic");
+    round_trip_nota(
+        Operation::Record(multi_topic_entry),
+        "(Record ([spirit nota] Decision [multi topic] Maximum))",
     );
     round_trip_nota(Operation::Observe(Observation::State), "(Observe State)");
     round_trip_nota(
@@ -359,7 +371,7 @@ fn spirit_canonical_examples_round_trip() {
         Reply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
         }),
-        "(RecordProvenancesObserved ([((1 workspace Decision [description only] Maximum) 2026-05-20 14:30:00)]))",
+        "(RecordProvenancesObserved ([((1 [workspace] Decision [description only] Maximum) 2026-05-20 14:30:00)]))",
     );
     round_trip_nota(
         Reply::TopicsObserved(TopicsObserved {
@@ -371,8 +383,10 @@ fn spirit_canonical_examples_round_trip() {
         "(TopicsObserved ([(workspace 2)]))",
     );
     round_trip_nota(
-        Event::RecordCaptured(RecordCaptured { record: description() }),
-        "(RecordCaptured ((1 workspace Decision [description only] Maximum)))",
+        Event::RecordCaptured(RecordCaptured {
+            record: description(),
+        }),
+        "(RecordCaptured ((1 [workspace] Decision [description only] Maximum)))",
     );
     round_trip_nota(
         Event::EffectEmitted(EffectEmitted {
@@ -384,16 +398,15 @@ fn spirit_canonical_examples_round_trip() {
 
 #[test]
 fn record_request_with_client_timestamp_shape_is_rejected() {
-    let mut decoder = Decoder::new(
-        "(Record (workspace Decision [description only] Maximum 1779000000))",
-    );
+    let mut decoder =
+        Decoder::new("(Record ([workspace] Decision [description only] Maximum 1779000000))");
     Operation::decode(&mut decoder).expect_err("client timestamp must not decode");
 }
 
 #[test]
 fn record_request_with_parenthesized_client_date_time_shape_is_rejected() {
     let mut decoder = Decoder::new(
-        "(Record (workspace Decision [description only] Maximum (2026 5 20) (14 30 0)))",
+        "(Record ([workspace] Decision [description only] Maximum (2026 5 20) (14 30 0)))",
     );
     Operation::decode(&mut decoder).expect_err("parenthesized client date/time must not decode");
 }

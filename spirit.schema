@@ -28,6 +28,7 @@
   Mode ObservationMode
 
   Topic [String]
+  Topics [(Vec Topic)]
   Description [String]
   StatementText [String]
   FocusArea [String]
@@ -37,12 +38,12 @@
   StateSubscriptionToken [u64]
   RecordSubscriptionToken [u64]
 
-  Entry [Topic Kind Description Certainty]
+  Entry [Topics Kind Description Certainty]
   Statement [StatementText]
   RecordQuery [(Option Topic) (Option Kind) Mode]
   RecordObservation [RecordQuery]
   RecordSubscription [(Option Topic) Mode]
-  RecordDescription [RecordIdentifier Topic Kind Description Certainty]
+  RecordDescription [RecordIdentifier Topics Kind Description Certainty]
   RecordProvenance [RecordDescription Date Time]
   TopicCount [Topic u64]
   PresenceView [Presence FocusArea]

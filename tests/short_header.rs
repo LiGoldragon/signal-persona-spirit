@@ -5,7 +5,7 @@ use signal_frame::{
 use signal_persona_spirit::{
     Description, Entry, Frame, FrameBody, Kind, Observation, ObservationMode, Operation,
     OperationKind, RecordQuery, Reply, RequestUnimplemented, Statement, StatementText, Topic,
-    UnimplementedReason,
+    Topics, UnimplementedReason,
 };
 use signal_sema::Magnitude;
 
@@ -97,7 +97,7 @@ fn exchange() -> ExchangeIdentifier {
 
 fn entry() -> Entry {
     Entry {
-        topic: Topic::new("workspace"),
+        topics: Topics::single(Topic::new("workspace")),
         kind: Kind::Decision,
         description: Description::new("schema header"),
         certainty: Magnitude::Maximum,

@@ -22,9 +22,10 @@
   Magnitude [Minimum VeryLow Low Medium High VeryHigh Maximum]
   ObservationMode [DescriptionOnly WithProvenance]
   Topic (String)
+  Topics ((Vec Topic))
   Description (String)
   StatementText (String)
-  Entry (Topic Kind Description Magnitude)
+  Entry (Topics Kind Description Magnitude)
   Statement (StatementText)
   Observation ((Option Topic) (Option Kind) ObservationMode)
   Subscription ((Option Topic) ObservationMode)

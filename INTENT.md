@@ -56,18 +56,17 @@ The dual emission is **not** a permanent compatibility surface; it
 is a **migration scaffold**. Once all consumers reach the
 qualified `::spirit::*` paths, the legacy invocation retires.
 
-## v0.2.0 description-only discipline
+## Description-only discipline
 
-The v0.2.0 record shape (per primary INTENT.md §"v0.2.0 wire
-discipline") carries one agent-clarified `Description`, a `Kind`, a
-`Magnitude`, and a daemon-stamped timestamp. Verbatim/context
-payloads from earlier shapes are gone. The wire reply to a `Record`
-operation is `(RecordAccepted N)` — terse; no echo of the
-submitted content. Daemon-stamped timestamps: clients do not supply
-capture time. User-creatable single-string topics: any new topic
-word a `Record` uses is registered at the wire layer; no
-pre-declared enum. (Multi-topic-per-record is a proposed future
-extension, not the current shape.)
+The record shape carries one agent-clarified `Description`, a
+`Kind`, a `Magnitude`, daemon-stamped time, and one or more
+user-creatable topic strings. Verbatim/context payloads from
+earlier shapes are gone. The wire reply to a `Record` operation is
+`(RecordAccepted N)` — terse; no echo of the submitted content.
+Daemon-stamped timestamps: clients do not supply capture time. Any
+new topic word a `Record` uses is registered at the wire layer; no
+pre-declared enum. Topic queries match membership in the entry's
+topic vector.
 
 ## Goals
 
@@ -79,9 +78,9 @@ extension, not the current shape.)
 - Maintain **dual wire emission** through the schema-driven
   migration window: legacy at crate root, schema-driven at
   `::spirit::*`.
-- Project the **v0.2.0 description-only discipline** — terse
-  acknowledgements, daemon-stamped timestamps, single-string
-  user-creatable topics.
+- Project the **description-only discipline** — terse
+  acknowledgements, daemon-stamped timestamps, and user-creatable
+  topic vectors.
 
 ## Constraints
 

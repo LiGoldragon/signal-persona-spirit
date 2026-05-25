@@ -29,6 +29,8 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 - `State` projects to Sema `Assert` at the daemon.
 - `Record` projects to Sema `Assert` at the daemon.
 - `Entry` is one top-level statement without client-provided capture time.
+  It carries one or more user-created topic strings; topic filters match
+  membership in that topic vector.
   Restatement is represented by repeated `Entry` records, not by nesting
   vectors.
 - Capture time appears only in daemon-produced provenance as a bare
