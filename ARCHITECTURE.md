@@ -121,3 +121,51 @@ src/lib.rs              — request/reply/event records and signal_channel! invo
 examples/canonical.nota — canonical NOTA examples
 tests/round_trip.rs     — rkyv frame, NOTA, verb, and stream witnesses
 ```
+
+## Pending schema-engine upgrade
+
+**Status:** scheduled for migration to schema-language-based contract per
+`primary/reports/designer/326-v13-spirit-complete-schema-vision.md` +
+`primary/reports/designer/324-migration-mvp-spirit-handover-re-specification.md`.
+The reader model is multi-pass NOTA-first per spirit record 549; macro
+application iterates to a fixed point per record 569.
+
+**Target:** this component's hand-written `signal_channel!` invocation +
+Layer 2 Command/Effect + storage types convert to a single
+`spirit/spirit.schema` file. The brilliant macro library (`primary-ezqx.1`)
+reads the schema + emits all the wire types + ShortHeader projection +
+dispatcher + VersionProjection + storage descriptors.
+
+**Sequence:** Spirit is the MVP pilot landing first via `primary-ezqx.1`.
+This ordinary contract is the first to be reborn from the `.schema`
+source. The existing tables in `## Contract Surface` and `## Constraints`
+become outputs of the macro rather than hand-maintained surfaces.
+
+**Per-component concerns:** Repo still carries the `persona-` prefix per
+the /318 pilot block; the rename to bare `signal-spirit` lands after the
+schema-engine cutover proves the macro library shape. The current
+three-layer-migration documentation in `## Three-layer model` describes
+contract-local verbs the macro must continue to emit (`State`, `Record`,
+`Observe`, `Watch`/`Unwatch`, mandatory `Tap`/`Untap`); the schema source
+encodes these as the verb roots and the macro lowers them to the wire
+records.
+
+**Variant slot policy.** Per spirit record 562 the spirit schema's enums
+place data-carrying variants in slots 0-6 and unit variants after. New
+unit variants land after the existing units; the wire format is
+backward-compatible by construction. Per record 564 the workspace's
+common identifiers (record, forward, send, similar) are stored as
+enum-encoded composite names — the namespace is composable across
+components and enables multilingual labels because the wire form is the
+discriminator, not the string.
+
+**References:**
+- `primary/reports/designer/326-v13-spirit-complete-schema-vision.md` —
+  uniform header form + schema-language design
+- `primary/reports/designer/333-upgrade-mechanism-full-design-explained.md`
+  + `333-v2` — upgrade mechanism design + corrections (wire-compat gap
+  affects this contract's cross-version frame exchange)
+- `primary/reports/designer/334-v2-multi-pass-nota-first-schema-reader.md`
+  — multi-pass reader model (record 549)
+- `primary/reports/operator/174-schema-import-header-design-critique-2026-05-24.md`
+  — header/body/feature separation + lowering rules
