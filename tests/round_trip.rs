@@ -9,7 +9,7 @@ use signal_persona_spirit::{
     OperationKind, OperationReceived, Presence, QuestionIdentifier, QuestionSummary, QuestionText,
     QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier, RecordProvenance,
     RecordProvenancesObserved, RecordQuery, RecordSubscription, RecordSubscriptionToken,
-    RecordsObserved, Reply, RequestUnimplemented, State, StateChanged, StateObserved,
+    PresenceView, RecordsObserved, Reply, RequestUnimplemented, StateChanged, StateObserved,
     StateSubscriptionToken, Statement, StatementText, Subscription, SubscriptionOpened,
     SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time, Topic, TopicCount,
     TopicsObserved, UnimplementedReason,
@@ -53,8 +53,8 @@ fn entry() -> Entry {
     }
 }
 
-fn state() -> State {
-    State {
+fn state() -> PresenceView {
+    PresenceView {
         presence: Presence::Active,
         focus: Some(FocusArea::new("implementation")),
     }

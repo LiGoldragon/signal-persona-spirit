@@ -185,6 +185,9 @@ pub enum ObservationMode {
     WithProvenance,
 }
 
+pub type Certainty = Magnitude;
+pub type Mode = ObservationMode;
+
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
 )]
@@ -247,7 +250,7 @@ pub struct TopicCount {
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct State {
+pub struct PresenceView {
     pub presence: Presence,
     pub focus: Option<FocusArea>,
 }
@@ -305,7 +308,7 @@ impl RecordAccepted {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct StateObserved {
-    pub state: State,
+    pub state: PresenceView,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -350,7 +353,7 @@ pub enum SubscriptionToken {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
 pub enum SubscriptionSnapshot {
-    State(State),
+    State(PresenceView),
     Records(Vec<RecordDescription>),
 }
 
@@ -380,7 +383,7 @@ pub struct RequestUnimplemented {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct StateChanged {
-    pub state: State,
+    pub state: PresenceView,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
