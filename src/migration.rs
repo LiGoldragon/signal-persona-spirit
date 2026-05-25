@@ -3,7 +3,7 @@
 use signal_sema::Magnitude;
 use version_projection::{ProjectionError, VersionProjection};
 
-use crate::{Context, Entry, Kind, Operation, Quote, Statement, Summary, Topic};
+use crate::{Description, Entry, Kind, Operation, Statement, Topic};
 
 pub mod v010 {
     use nota_codec::{NotaEnum, NotaRecord, NotaTransparent};
@@ -34,8 +34,8 @@ pub mod v010 {
             Self(value.into())
         }
 
-        pub fn into_current(self) -> crate::Summary {
-            crate::Summary::new(self.0)
+        pub fn into_description(self) -> crate::Description {
+            crate::Description::new(self.0)
         }
     }
 
@@ -48,10 +48,6 @@ pub mod v010 {
         pub fn new(value: impl Into<String>) -> Self {
             Self(value.into())
         }
-
-        pub fn into_current(self) -> crate::Context {
-            crate::Context::new(self.0)
-        }
     }
 
     #[derive(
@@ -62,10 +58,6 @@ pub mod v010 {
     impl Quote {
         pub fn new(value: impl Into<String>) -> Self {
             Self(value.into())
-        }
-
-        pub fn into_current(self) -> crate::Quote {
-            crate::Quote::new(self.0)
         }
     }
 
@@ -136,10 +128,8 @@ impl VersionProjection<v010::Entry, Entry> for V010ToV011 {
         Ok(Entry {
             topic: source.topic.into_current(),
             kind: source.kind.into(),
-            summary: source.summary.into_current(),
-            context: source.context.into_current(),
+            description: source.summary.into_description(),
             certainty: source.certainty.into(),
-            quote: source.quote.into_current(),
         })
     }
 }
@@ -181,26 +171,10 @@ impl VersionProjection<Kind, Kind> for V010ToV011 {
     }
 }
 
-impl VersionProjection<Summary, Summary> for V010ToV011 {
+impl VersionProjection<v010::Summary, Description> for V010ToV011 {
     type Error = std::convert::Infallible;
 
-    fn project(source: Summary) -> Result<Summary, Self::Error> {
-        Ok(source)
-    }
-}
-
-impl VersionProjection<Context, Context> for V010ToV011 {
-    type Error = std::convert::Infallible;
-
-    fn project(source: Context) -> Result<Context, Self::Error> {
-        Ok(source)
-    }
-}
-
-impl VersionProjection<Quote, Quote> for V010ToV011 {
-    type Error = std::convert::Infallible;
-
-    fn project(source: Quote) -> Result<Quote, Self::Error> {
-        Ok(source)
+    fn project(source: v010::Summary) -> Result<Description, Self::Error> {
+        Ok(source.into_description())
     }
 }

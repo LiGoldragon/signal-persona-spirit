@@ -23,14 +23,12 @@
   Unwatch [(SubscriptionToken SubscriptionToken)]
 
   Kind [Decision Principle Correction Clarification Constraint]
-  ObservationMode [SummaryOnly WithProvenance]
+  ObservationMode [DescriptionOnly WithProvenance]
   Presence [Active Absent]
   UnimplementedReason [NotBuiltYet IntegrationNotLanded]
 
   Topic (String)
-  Summary (String)
-  Context (String)
-  Quote (String)
+  Description (String)
   StatementText (String)
   FocusArea (String)
   RecordIdentifier (u64)
@@ -39,13 +37,13 @@
   StateSubscriptionToken ((identifier u64))
   RecordSubscriptionToken ((identifier u64))
 
-  Entry ((topic Topic) (kind Kind) (summary Summary) (context Context) (certainty Magnitude) (quote Quote))
+  Entry ((topic Topic) (kind Kind) (description Description) (certainty Magnitude))
   Statement ((text StatementText))
   RecordQuery ((topic (Option Topic)) (kind (Option Kind)) (mode ObservationMode))
   RecordObservation ((query RecordQuery))
   RecordSubscription ((topic (Option Topic)) (mode ObservationMode))
-  RecordSummary ((identifier RecordIdentifier) (topic Topic) (kind Kind) (summary Summary) (certainty Magnitude))
-  RecordProvenance ((summary RecordSummary) (context Context) (date Date) (time Time) (quote Quote))
+  RecordDescription ((identifier RecordIdentifier) (topic Topic) (kind Kind) (description Description) (certainty Magnitude))
+  RecordProvenance ((description RecordDescription) (date Date) (time Time))
   TopicCount ((topic Topic) (entries u64))
   QuestionSummary ((identifier QuestionIdentifier) (question QuestionText))
 
@@ -55,17 +53,17 @@
 
   RecordAccepted (RecordIdentifier)
   StateObserved ((state State))
-  RecordsObserved ((records (Vec RecordSummary)))
+  RecordsObserved ((records (Vec RecordDescription)))
   RecordProvenancesObserved ((records (Vec RecordProvenance)))
   TopicsObserved ((topics (Vec TopicCount)))
   QuestionsObserved ((questions (Vec QuestionSummary)))
   SubscriptionOpened ((token SubscriptionToken) (snapshot SubscriptionSnapshot))
   SubscriptionRetracted ((token SubscriptionToken))
   RequestUnimplemented (UnimplementedReason)
-  SubscriptionSnapshot [(State State) (Records (Vec RecordSummary))]
+  SubscriptionSnapshot [(State State) (Records (Vec RecordDescription))]
 
   StateChanged ((state State))
-  RecordCaptured ((record RecordSummary))
+  RecordCaptured ((record RecordDescription))
   OperationKind [State Record Observe Watch Unwatch]
   OperationReceived ((operation OperationKind))
   EffectEmitted ((observation SemaObservation))

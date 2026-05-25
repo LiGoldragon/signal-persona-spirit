@@ -3,8 +3,8 @@ use signal_frame::{
     short_header_from_length_prefixed,
 };
 use signal_persona_spirit::{
-    Context, Entry, Frame, FrameBody, Kind, Observation, ObservationMode, Operation, OperationKind,
-    Quote, RecordQuery, Reply, RequestUnimplemented, Statement, StatementText, Summary, Topic,
+    Description, Entry, Frame, FrameBody, Kind, Observation, ObservationMode, Operation,
+    OperationKind, RecordQuery, Reply, RequestUnimplemented, Statement, StatementText, Topic,
     UnimplementedReason,
 };
 use signal_sema::Magnitude;
@@ -99,10 +99,8 @@ fn entry() -> Entry {
     Entry {
         topic: Topic::new("workspace"),
         kind: Kind::Decision,
-        summary: Summary::new("schema header"),
-        context: Context::new("schema-derived short header"),
+        description: Description::new("schema header"),
         certainty: Magnitude::Maximum,
-        quote: Quote::new("header witness"),
     }
 }
 

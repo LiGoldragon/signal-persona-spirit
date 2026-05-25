@@ -69,39 +69,9 @@ impl RecordIdentifier {
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
 )]
-pub struct Summary(String);
+pub struct Description(String);
 
-impl Summary {
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
-)]
-pub struct Quote(String);
-
-impl Quote {
-    pub fn new(value: impl Into<String>) -> Self {
-        Self(value.into())
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
-)]
-pub struct Context(String);
-
-impl Context {
+impl Description {
     pub fn new(value: impl Into<String>) -> Self {
         Self(value.into())
     }
@@ -211,7 +181,7 @@ pub enum Kind {
     Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
 )]
 pub enum ObservationMode {
-    SummaryOnly,
+    DescriptionOnly,
     WithProvenance,
 }
 
@@ -232,10 +202,8 @@ pub struct Statement {
 pub struct Entry {
     pub topic: Topic,
     pub kind: Kind,
-    pub summary: Summary,
-    pub context: Context,
+    pub description: Description,
     pub certainty: Magnitude,
-    pub quote: Quote,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -257,21 +225,19 @@ pub struct RecordSubscription {
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct RecordSummary {
+pub struct RecordDescription {
     pub identifier: RecordIdentifier,
     pub topic: Topic,
     pub kind: Kind,
-    pub summary: Summary,
+    pub description: Description,
     pub certainty: Magnitude,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordProvenance {
-    pub summary: RecordSummary,
-    pub context: Context,
+    pub description: RecordDescription,
     pub date: Date,
     pub time: Time,
-    pub quote: Quote,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -344,7 +310,7 @@ pub struct StateObserved {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordsObserved {
-    pub records: Vec<RecordSummary>,
+    pub records: Vec<RecordDescription>,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -385,7 +351,7 @@ pub enum SubscriptionToken {
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
 pub enum SubscriptionSnapshot {
     State(State),
-    Records(Vec<RecordSummary>),
+    Records(Vec<RecordDescription>),
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -419,7 +385,7 @@ pub struct StateChanged {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordCaptured {
-    pub record: RecordSummary,
+    pub record: RecordDescription,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]

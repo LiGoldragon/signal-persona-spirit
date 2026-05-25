@@ -39,7 +39,7 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
   to Sema `Subscribe` and carry explicit stream relations.
 - Stream-close variants (domain `Unwatch` and mandatory `Untap`)
   project to Sema `Retract`.
-- Intent observation is summary-first unless the caller asks for
+- Intent observation is description-first unless the caller asks for
   provenance.
 - Mandatory `Tap`/`Untap` observability surface is part of the
   contract per persona-component discipline.

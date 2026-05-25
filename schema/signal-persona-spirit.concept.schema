@@ -20,13 +20,11 @@
   Unwatch [(SubscriptionToken SubscriptionToken)]
   Kind [Decision Principle Correction Clarification Constraint]
   Magnitude [Minimum VeryLow Low Medium High VeryHigh Maximum]
-  ObservationMode [SummaryOnly WithProvenance]
+  ObservationMode [DescriptionOnly WithProvenance]
   Topic (String)
-  Summary (String)
-  Context (String)
-  Quote (String)
+  Description (String)
   StatementText (String)
-  Entry (Topic Kind Summary Context Magnitude Quote)
+  Entry (Topic Kind Description Magnitude)
   Statement (StatementText)
   Observation ((Option Topic) (Option Kind) ObservationMode)
   Subscription ((Option Topic) ObservationMode)

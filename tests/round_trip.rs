@@ -4,15 +4,15 @@ use signal_frame::{
     SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    Context, Date, EffectEmitted, Entry, Event, FocusArea, Frame, FrameBody, Kind, Observation,
+    Date, Description, EffectEmitted, Entry, Event, FocusArea, Frame, FrameBody, Kind, Observation,
     ObservationMode, ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken, Operation,
     OperationKind, OperationReceived, Presence, QuestionIdentifier, QuestionSummary, QuestionText,
-    QuestionsObserved, Quote, RecordAccepted, RecordCaptured, RecordIdentifier, RecordProvenance,
+    QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier, RecordProvenance,
     RecordProvenancesObserved, RecordQuery, RecordSubscription, RecordSubscriptionToken,
     RecordsObserved, Reply, RequestUnimplemented, State, StateChanged, StateObserved,
     StateSubscriptionToken, Statement, StatementText, Subscription, SubscriptionOpened,
-    SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Summary, Time, Topic,
-    TopicCount, TopicsObserved, UnimplementedReason,
+    SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time, Topic, TopicCount,
+    TopicsObserved, UnimplementedReason,
 };
 use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
@@ -26,23 +26,21 @@ fn exchange() -> ExchangeIdentifier {
     )
 }
 
-fn summary() -> signal_persona_spirit::RecordSummary {
-    signal_persona_spirit::RecordSummary {
+fn description() -> signal_persona_spirit::RecordDescription {
+    signal_persona_spirit::RecordDescription {
         identifier: RecordIdentifier::new(1),
         topic: Topic::new("workspace"),
         kind: Kind::Decision,
-        summary: Summary::new("summary only"),
+        description: Description::new("description only"),
         certainty: Magnitude::Maximum,
     }
 }
 
 fn provenance() -> RecordProvenance {
     RecordProvenance {
-        summary: summary(),
-        context: Context::new("current implementation context"),
+        description: description(),
         date: Date::new(2026, 5, 20),
         time: Time::new(14, 30, 0),
-        quote: Quote::new("first statement"),
     }
 }
 
@@ -50,10 +48,8 @@ fn entry() -> Entry {
     Entry {
         topic: Topic::new("workspace"),
         kind: Kind::Decision,
-        summary: Summary::new("summary only"),
-        context: Context::new("current implementation context"),
+        description: Description::new("description only"),
         certainty: Magnitude::Maximum,
-        quote: Quote::new("first statement"),
     }
 }
 
@@ -125,14 +121,14 @@ fn spirit_requests_round_trip() {
         Operation::Observe(Observation::Records(RecordQuery {
             topic: None,
             kind: None,
-            mode: ObservationMode::SummaryOnly,
+            mode: ObservationMode::DescriptionOnly,
         })),
         Operation::Observe(Observation::Topics),
         Operation::Observe(Observation::Questions),
         Operation::Watch(Subscription::State),
         Operation::Watch(Subscription::Records(RecordSubscription {
             topic: None,
-            mode: ObservationMode::SummaryOnly,
+            mode: ObservationMode::DescriptionOnly,
         })),
         Operation::Unwatch(SubscriptionToken::State(StateSubscriptionToken {
             identifier: 1,
@@ -157,7 +153,7 @@ fn spirit_replies_round_trip() {
         Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1))),
         Reply::StateObserved(StateObserved { state: state() }),
         Reply::RecordsObserved(RecordsObserved {
-            records: vec![summary()],
+            records: vec![description()],
         }),
         Reply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
@@ -180,7 +176,7 @@ fn spirit_replies_round_trip() {
         }),
         Reply::SubscriptionOpened(SubscriptionOpened {
             token: SubscriptionToken::Records(RecordSubscriptionToken { identifier: 2 }),
-            snapshot: SubscriptionSnapshot::Records(vec![summary()]),
+            snapshot: SubscriptionSnapshot::Records(vec![description()]),
         }),
         Reply::SubscriptionRetracted(SubscriptionRetracted {
             token: SubscriptionToken::State(StateSubscriptionToken { identifier: 1 }),
@@ -212,7 +208,7 @@ fn spirit_reply_payloads_convert_through_macro_generated_from_impls() {
 fn spirit_events_round_trip() {
     let events = [
         Event::StateChanged(StateChanged { state: state() }),
-        Event::RecordCaptured(RecordCaptured { record: summary() }),
+        Event::RecordCaptured(RecordCaptured { record: description() }),
         Event::OperationReceived(OperationReceived {
             operation: OperationKind::Record,
         }),
@@ -253,7 +249,7 @@ fn spirit_request_exposes_contract_owned_kind() {
     assert_eq!(
         Operation::Watch(Subscription::Records(RecordSubscription {
             topic: None,
-            mode: ObservationMode::SummaryOnly,
+            mode: ObservationMode::DescriptionOnly,
         }))
         .kind(),
         OperationKind::Watch
@@ -267,7 +263,7 @@ fn spirit_stream_witnesses_are_emitted() {
         Some(signal_persona_spirit::StreamKind::DomainStream)
     );
     assert_eq!(
-        Event::RecordCaptured(RecordCaptured { record: summary() }).stream_kind(),
+        Event::RecordCaptured(RecordCaptured { record: description() }).stream_kind(),
         signal_persona_spirit::StreamKind::DomainStream
     );
     assert_eq!(
@@ -310,33 +306,31 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         Operation::Record(entry()),
-        "(Record (workspace Decision [summary only] [current implementation context] Maximum [first statement]))",
+        "(Record (workspace Decision [description only] Maximum))",
     );
     let mut high_entry = entry();
-    high_entry.summary = Summary::new("high summary");
-    high_entry.context = Context::new("high context");
+    high_entry.description = Description::new("high description");
     high_entry.certainty = Magnitude::High;
-    high_entry.quote = Quote::new("high quote");
     round_trip_nota(
         Operation::Record(high_entry),
-        "(Record (workspace Decision [high summary] [high context] High [high quote]))",
+        "(Record (workspace Decision [high description] High))",
     );
     round_trip_nota(Operation::Observe(Observation::State), "(Observe State)");
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
             topic: None,
             kind: None,
-            mode: ObservationMode::SummaryOnly,
+            mode: ObservationMode::DescriptionOnly,
         })),
-        "(Observe (Records (None None SummaryOnly)))",
+        "(Observe (Records (None None DescriptionOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
             topic: Some(Topic::new("workspace")),
             kind: Some(Kind::Decision),
-            mode: ObservationMode::SummaryOnly,
+            mode: ObservationMode::DescriptionOnly,
         })),
-        "(Observe (Records ((Some workspace) (Some Decision) SummaryOnly)))",
+        "(Observe (Records ((Some workspace) (Some Decision) DescriptionOnly)))",
     );
     round_trip_nota(Operation::Observe(Observation::Topics), "(Observe Topics)");
     round_trip_nota(
@@ -347,9 +341,9 @@ fn spirit_canonical_examples_round_trip() {
     round_trip_nota(
         Operation::Watch(Subscription::Records(RecordSubscription {
             topic: None,
-            mode: ObservationMode::SummaryOnly,
+            mode: ObservationMode::DescriptionOnly,
         })),
-        "(Watch (Records (None SummaryOnly)))",
+        "(Watch (Records (None DescriptionOnly)))",
     );
     round_trip_nota(
         Operation::Unwatch(SubscriptionToken::Records(RecordSubscriptionToken {
@@ -365,7 +359,7 @@ fn spirit_canonical_examples_round_trip() {
         Reply::RecordProvenancesObserved(RecordProvenancesObserved {
             records: vec![provenance()],
         }),
-        "(RecordProvenancesObserved ([((1 workspace Decision [summary only] Maximum) [current implementation context] 2026-05-20 14:30:00 [first statement])]))",
+        "(RecordProvenancesObserved ([((1 workspace Decision [description only] Maximum) 2026-05-20 14:30:00)]))",
     );
     round_trip_nota(
         Reply::TopicsObserved(TopicsObserved {
@@ -377,8 +371,8 @@ fn spirit_canonical_examples_round_trip() {
         "(TopicsObserved ([(workspace 2)]))",
     );
     round_trip_nota(
-        Event::RecordCaptured(RecordCaptured { record: summary() }),
-        "(RecordCaptured ((1 workspace Decision [summary only] Maximum)))",
+        Event::RecordCaptured(RecordCaptured { record: description() }),
+        "(RecordCaptured ((1 workspace Decision [description only] Maximum)))",
     );
     round_trip_nota(
         Event::EffectEmitted(EffectEmitted {
@@ -391,7 +385,7 @@ fn spirit_canonical_examples_round_trip() {
 #[test]
 fn record_request_with_client_timestamp_shape_is_rejected() {
     let mut decoder = Decoder::new(
-        "(Record (workspace Decision [summary only] [current implementation context] Maximum 1779000000 [first statement]))",
+        "(Record (workspace Decision [description only] Maximum 1779000000))",
     );
     Operation::decode(&mut decoder).expect_err("client timestamp must not decode");
 }
@@ -399,7 +393,7 @@ fn record_request_with_client_timestamp_shape_is_rejected() {
 #[test]
 fn record_request_with_parenthesized_client_date_time_shape_is_rejected() {
     let mut decoder = Decoder::new(
-        "(Record (workspace Decision [summary only] [current implementation context] Maximum (2026 5 20) (14 30 0) [first statement]))",
+        "(Record (workspace Decision [description only] Maximum (2026 5 20) (14 30 0)))",
     );
     Operation::decode(&mut decoder).expect_err("parenthesized client date/time must not decode");
 }
