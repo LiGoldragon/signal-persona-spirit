@@ -269,9 +269,27 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 [[package]]
 name = "schema"
 version = "0.1.0"
+source = "git+https://github.com/LiGoldragon/schema.git?branch=designer-schema-full-stack-spirit-2026-05-25#c618d993958691ba841924d40a77bdd27565b321"
+dependencies = [
+ "nota-codec",
+]
+
+[[package]]
+name = "schema"
+version = "0.1.0"
 source = "git+https://github.com/LiGoldragon/schema.git?branch=main#bfe4ff40a1dca39cbc55f8cd5785a06ff2497abd"
 dependencies = [
  "nota-codec",
+]
+
+[[package]]
+name = "schema-rust"
+version = "0.1.0"
+source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=designer-schema-full-stack-spirit-2026-05-25#a0aa9116c0b09f0a3dd1e17a48dfc715ce400d6b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "schema 0.1.0 (git+https://github.com/LiGoldragon/schema.git?branch=designer-schema-full-stack-spirit-2026-05-25)",
 ]
 
 [[package]]
@@ -281,7 +299,19 @@ source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=main#d61ebf
 dependencies = [
  "proc-macro2",
  "quote",
- "schema",
+ "schema 0.1.0 (git+https://github.com/LiGoldragon/schema.git?branch=main)",
+]
+
+[[package]]
+name = "signal-frame"
+version = "0.1.0"
+source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=designer-schema-full-stack-spirit-2026-05-25#a0aa9116c0b09f0a3dd1e17a48dfc715ce400d6b"
+dependencies = [
+ "nota-codec",
+ "paste",
+ "rkyv",
+ "signal-frame-macros 0.1.0 (git+https://github.com/LiGoldragon/signal-frame.git?branch=designer-schema-full-stack-spirit-2026-05-25)",
+ "thiserror",
 ]
 
 [[package]]
@@ -292,8 +322,21 @@ dependencies = [
  "nota-codec",
  "paste",
  "rkyv",
- "signal-frame-macros",
+ "signal-frame-macros 0.1.0 (git+https://github.com/LiGoldragon/signal-frame.git?branch=main)",
  "thiserror",
+]
+
+[[package]]
+name = "signal-frame-macros"
+version = "0.1.0"
+source = "git+https://github.com/LiGoldragon/signal-frame.git?branch=designer-schema-full-stack-spirit-2026-05-25#a0aa9116c0b09f0a3dd1e17a48dfc715ce400d6b"
+dependencies = [
+ "nota-codec",
+ "proc-macro2",
+ "quote",
+ "schema 0.1.0 (git+https://github.com/LiGoldragon/schema.git?branch=designer-schema-full-stack-spirit-2026-05-25)",
+ "schema-rust 0.1.0 (git+https://github.com/LiGoldragon/signal-frame.git?branch=designer-schema-full-stack-spirit-2026-05-25)",
+ "syn",
 ]
 
 [[package]]
@@ -304,8 +347,8 @@ dependencies = [
  "nota-codec",
  "proc-macro2",
  "quote",
- "schema",
- "schema-rust",
+ "schema 0.1.0 (git+https://github.com/LiGoldragon/schema.git?branch=main)",
+ "schema-rust 0.1.0 (git+https://github.com/LiGoldragon/signal-frame.git?branch=main)",
  "syn",
 ]
 
@@ -316,7 +359,7 @@ dependencies = [
  "nota-box",
  "nota-codec",
  "rkyv",
- "signal-frame",
+ "signal-frame 0.1.0 (git+https://github.com/LiGoldragon/signal-frame.git?branch=designer-schema-full-stack-spirit-2026-05-25)",
  "signal-sema",
  "thiserror",
  "version-projection",
@@ -329,7 +372,7 @@ source = "git+https://github.com/LiGoldragon/signal-sema.git?branch=main#e48223d
 dependencies = [
  "nota-codec",
  "rkyv",
- "signal-frame",
+ "signal-frame 0.1.0 (git+https://github.com/LiGoldragon/signal-frame.git?branch=main)",
  "thiserror",
 ]
 

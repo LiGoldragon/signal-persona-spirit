@@ -7,7 +7,7 @@
 
 use nota_codec::{Decoder, Encoder, NotaDecode, NotaEncode, NotaEnum, NotaRecord, NotaTransparent};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
-use signal_frame::signal_channel;
+use signal_frame::{emit_schema, signal_channel};
 use signal_sema::{Magnitude, SemaObservation};
 
 pub mod migration;
@@ -401,4 +401,32 @@ pub struct EffectEmitted {
     pub observation: SemaObservation,
 }
 
+// Current main: signal_channel!([schema]) reads spirit.schema and
+// emits the legacy ChannelSpec-shaped types (Operation, Reply, Event,
+// FrameCodec, ...) that downstream code currently consumes.
 signal_channel!([schema]);
+
+// Schema-driven emission per /345 §4 + /346 §10. The wire schema is
+// the channel-contract for this signal repo; the emit_schema! call
+// reads `spirit.schema` and emits a `pub mod spirit { ... }` carrying
+// the schema-driven types (Operation, Reply, Event, ExtendedHeader,
+// ROUTES, etc.).
+//
+// During the migration this lives ALONGSIDE the legacy
+// signal_channel!([schema]) emission. Downstream code may consume
+// EITHER form:
+//
+// - Legacy:  signal_persona_spirit::Operation
+// - Schema:  signal_persona_spirit::spirit::Operation
+//
+// When the operator integration cycle flips downstream consumers
+// over, the legacy signal_channel!() invocation is removed; the
+// crate-root re-exports below ensure both forms resolve to the
+// schema-driven module during the transition.
+//
+// The owner channel is its own crate (`owner-signal-persona-spirit`),
+// not a sibling schema in this crate --- so this crate stays
+// single-wire-schema even under the multi-schema-per-crate convention.
+// The wire-schema/owner-schema split is enforced by the triad rule
+// (`skills/component-triad.md`).
+emit_schema!();

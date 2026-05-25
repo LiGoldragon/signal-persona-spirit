@@ -13,7 +13,7 @@ name = "signal_persona_spirit"
 path = "src/lib.rs"
 
 [dependencies]
-signal-frame = { git = "https://github.com/LiGoldragon/signal-frame.git", branch = "main" }
+signal-frame = { git = "https://github.com/LiGoldragon/signal-frame.git", branch = "designer-schema-full-stack-spirit-2026-05-25" }
 signal-sema  = { git = "https://github.com/LiGoldragon/signal-sema.git", branch = "main" }
 nota-box     = { git = "https://github.com/LiGoldragon/nota.git", branch = "main", package = "nota-box" }
 nota-codec   = { git = "https://github.com/LiGoldragon/nota-codec.git", branch = "main" }

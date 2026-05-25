@@ -6,13 +6,13 @@ use signal_frame::{
 use signal_persona_spirit::{
     Date, Description, EffectEmitted, Entry, Event, FocusArea, Frame, FrameBody, Kind, Observation,
     ObservationMode, ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken, Operation,
-    OperationKind, OperationReceived, Presence, QuestionIdentifier, QuestionSummary, QuestionText,
-    QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier, RecordProvenance,
-    RecordProvenancesObserved, RecordQuery, RecordSubscription, RecordSubscriptionToken,
-    PresenceView, RecordsObserved, Reply, RequestUnimplemented, StateChanged, StateObserved,
-    StateSubscriptionToken, Statement, StatementText, Subscription, SubscriptionOpened,
-    SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time, Topic, TopicCount,
-    TopicsObserved, UnimplementedReason,
+    OperationKind, OperationReceived, Presence, PresenceView, QuestionIdentifier, QuestionSummary,
+    QuestionText, QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier,
+    RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
+    RecordSubscriptionToken, RecordsObserved, Reply, RequestUnimplemented, StateChanged,
+    StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
+    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time,
+    Topic, TopicCount, TopicsObserved, UnimplementedReason,
 };
 use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
@@ -208,7 +208,9 @@ fn spirit_reply_payloads_convert_through_macro_generated_from_impls() {
 fn spirit_events_round_trip() {
     let events = [
         Event::StateChanged(StateChanged { state: state() }),
-        Event::RecordCaptured(RecordCaptured { record: description() }),
+        Event::RecordCaptured(RecordCaptured {
+            record: description(),
+        }),
         Event::OperationReceived(OperationReceived {
             operation: OperationKind::Record,
         }),
@@ -263,7 +265,10 @@ fn spirit_stream_witnesses_are_emitted() {
         Some(signal_persona_spirit::StreamKind::DomainStream)
     );
     assert_eq!(
-        Event::RecordCaptured(RecordCaptured { record: description() }).stream_kind(),
+        Event::RecordCaptured(RecordCaptured {
+            record: description()
+        })
+        .stream_kind(),
         signal_persona_spirit::StreamKind::DomainStream
     );
     assert_eq!(
@@ -371,7 +376,9 @@ fn spirit_canonical_examples_round_trip() {
         "(TopicsObserved ([(workspace 2)]))",
     );
     round_trip_nota(
-        Event::RecordCaptured(RecordCaptured { record: description() }),
+        Event::RecordCaptured(RecordCaptured {
+            record: description(),
+        }),
         "(RecordCaptured ((1 workspace Decision [description only] Maximum)))",
     );
     round_trip_nota(
@@ -384,9 +391,8 @@ fn spirit_canonical_examples_round_trip() {
 
 #[test]
 fn record_request_with_client_timestamp_shape_is_rejected() {
-    let mut decoder = Decoder::new(
-        "(Record (workspace Decision [description only] Maximum 1779000000))",
-    );
+    let mut decoder =
+        Decoder::new("(Record (workspace Decision [description only] Maximum 1779000000))");
     Operation::decode(&mut decoder).expect_err("client timestamp must not decode");
 }
 

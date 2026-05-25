@@ -37,8 +37,9 @@ fn v010_record_entry_projects_to_current_entry_shape() {
 
 #[test]
 fn v010_nota_record_projects_to_current_operation() {
-    let mut decoder =
-        Decoder::new("(Record (workspace Decision [description] [context dropped] Medium [quote dropped]))");
+    let mut decoder = Decoder::new(
+        "(Record (workspace Decision [description] [context dropped] Medium [quote dropped]))",
+    );
     let source = v010::Operation::decode(&mut decoder).unwrap();
 
     let current =
