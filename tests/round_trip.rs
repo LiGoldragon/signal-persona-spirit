@@ -8,11 +8,12 @@ use signal_persona_spirit::{
     ObservationMode, ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken, Operation,
     OperationKind, OperationReceived, Presence, PresenceView, QuestionIdentifier, QuestionSummary,
     QuestionText, QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier,
-    RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordSubscription,
-    RecordSubscriptionToken, RecordsObserved, Reply, RequestUnimplemented, StateChanged,
-    StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
-    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time,
-    Topic, TopicCount, Topics, TopicsObserved, UnimplementedReason,
+    RecordIdentifierQuery, RecordIdentifierRange, RecordIdentifierSelection, RecordProvenance,
+    RecordProvenancesObserved, RecordQuery, RecordSubscription, RecordSubscriptionToken,
+    RecordsObserved, Reply, RequestUnimplemented, StateChanged, StateObserved,
+    StateSubscriptionToken, Statement, StatementText, Subscription, SubscriptionOpened,
+    SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time, Topic, TopicCount,
+    Topics, TopicsObserved, UnimplementedReason,
 };
 use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
@@ -123,6 +124,10 @@ fn spirit_requests_round_trip() {
             kind: None,
             mode: ObservationMode::DescriptionOnly,
         })),
+        Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(
+            RecordIdentifierSelection::Exact(RecordIdentifier::new(1)),
+            ObservationMode::DescriptionOnly,
+        ))),
         Operation::Observe(Observation::Topics),
         Operation::Observe(Observation::Questions),
         Operation::Watch(Subscription::State),
@@ -343,6 +348,23 @@ fn spirit_canonical_examples_round_trip() {
             mode: ObservationMode::DescriptionOnly,
         })),
         "(Observe (Records ((Some workspace) (Some Decision) DescriptionOnly)))",
+    );
+    round_trip_nota(
+        Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(
+            RecordIdentifierSelection::Exact(RecordIdentifier::new(1053)),
+            ObservationMode::DescriptionOnly,
+        ))),
+        "(Observe (RecordIdentifiers ((Exact 1053) DescriptionOnly)))",
+    );
+    round_trip_nota(
+        Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(
+            RecordIdentifierSelection::Range(RecordIdentifierRange::new(
+                RecordIdentifier::new(1048),
+                RecordIdentifier::new(1053),
+            )),
+            ObservationMode::WithProvenance,
+        ))),
+        "(Observe (RecordIdentifiers ((Range (1048 1053)) WithProvenance)))",
     );
     round_trip_nota(Operation::Observe(Observation::Topics), "(Observe Topics)");
     round_trip_nota(

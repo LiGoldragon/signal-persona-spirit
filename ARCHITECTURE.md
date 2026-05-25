@@ -84,6 +84,7 @@ Sema observations rather than executable effect records.
 | `Record` | `Entry` without date/time | `Assert` |
 | `Observe` (state kind) | `Observation::State` unit variant | `Match` |
 | `Observe` (Records kind) | `Observation::Records` | `Match` |
+| `Observe` (RecordIdentifiers kind) | `Observation::RecordIdentifiers` | `Match` |
 | `Observe` (Topics kind) | `Observation::Topics` unit variant | `Match` |
 | `Observe` (questions kind) | `Observation::Questions` unit variant | `Match` |
 | `Watch` (domain state stream) | `Subscription::State` unit variant | `Subscribe` |
@@ -104,7 +105,7 @@ label is computed at observation publish time inside the daemon.
 | Subscribe-shaped variants declare stream relations. | `signal_channel!` stream blocks bind subscribe/open/event/close. |
 | Retract-shaped close variants have typed close acknowledgements. | `SubscriptionRetracted` carries the typed `SubscriptionToken` sum and round-trips through RKYV and NOTA. |
 | Intent queries are description-first unless a richer mode is requested. | `ObservationMode::DescriptionOnly` is the explicit query mode used in canonical examples. |
-| Intent record queries support the agent-useful filters needed for intent work. | `RecordQuery` carries optional `topic` and optional `kind` filters, with description-only and provenance modes; topic filtering matches membership in `Entry::topics`. |
+| Intent record queries support the agent-useful filters needed for intent work. | `RecordQuery` carries optional `topic` and optional `kind` filters, with description-only and provenance modes; topic filtering matches membership in `Entry::topics`. `RecordIdentifierQuery` carries exact or inclusive range selection by `RecordIdentifier`. |
 | Agents can inspect the intent-topic catalog without reading every entry. | `Observation::Topics` returns `TopicsObserved` with one `TopicCount` per topic membership. |
 | Every submitted entry is one top-level psyche statement without client-provided capture time. | `Entry` carries one or more topics, kind, description, and certainty; repeated entries are the restatement signal. |
 | Spirit never accepts client-provided timestamps on `Record` requests. | `record_request_with_client_timestamp_shape_is_rejected` and `record_request_with_parenthesized_client_date_time_shape_is_rejected` fail old timestamp-bearing input shapes. |

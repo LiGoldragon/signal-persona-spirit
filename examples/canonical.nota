@@ -6,6 +6,8 @@
 (Observe (Records (None None DescriptionOnly)))
 (Observe (Records ((Some workspace) (Some Decision) DescriptionOnly)))
 (Observe (Records (None None WithProvenance)))
+(Observe (RecordIdentifiers ((Exact 1053) DescriptionOnly)))
+(Observe (RecordIdentifiers ((Range (1048 1053)) WithProvenance)))
 (Observe Topics)
 (Observe Questions)
 (Watch State)

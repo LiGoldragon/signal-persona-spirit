@@ -35,6 +35,9 @@
   QuestionIdentifier [String]
   QuestionText [String]
   RecordIdentifier [u64]
+  RecordIdentifierRange [RecordIdentifier RecordIdentifier]
+  RecordIdentifierSelection ((Exact RecordIdentifier) (Range RecordIdentifierRange))
+  RecordIdentifierQuery [RecordIdentifierSelection Mode]
   StateSubscriptionToken [u64]
   RecordSubscriptionToken [u64]
 
@@ -65,7 +68,7 @@
   Time [u8 u8 u8]
   Presence (Active Absent)
   UnimplementedReason (NotBuiltYet IntegrationNotLanded)
-  Observation (State (Records RecordQuery) Topics Questions)
+  Observation (State (Records RecordQuery) (RecordIdentifiers RecordIdentifierQuery) Topics Questions)
   Subscription (State (Records RecordSubscription))
   SubscriptionToken ((State StateSubscriptionToken) (Records RecordSubscriptionToken))
   OperationKind (State Record Observe Watch Unwatch Tap Untap)

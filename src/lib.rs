@@ -276,6 +276,64 @@ pub struct RecordQuery {
     pub mode: ObservationMode,
 }
 
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq,
+)]
+pub struct RecordIdentifierRange {
+    pub first: RecordIdentifier,
+    pub last: RecordIdentifier,
+}
+
+impl RecordIdentifierRange {
+    pub const fn new(first: RecordIdentifier, last: RecordIdentifier) -> Self {
+        Self { first, last }
+    }
+
+    pub fn contains(self, identifier: RecordIdentifier) -> bool {
+        let value = identifier.value();
+        value >= self.first.value() && value <= self.last.value()
+    }
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecordIdentifierSelection {
+    Exact(RecordIdentifier),
+    Range(RecordIdentifierRange),
+}
+
+impl RecordIdentifierSelection {
+    pub fn contains(self, identifier: RecordIdentifier) -> bool {
+        match self {
+            Self::Exact(expected) => identifier == expected,
+            Self::Range(range) => range.contains(identifier),
+        }
+    }
+}
+
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq,
+)]
+pub struct RecordIdentifierQuery {
+    pub record_identifier_selection: RecordIdentifierSelection,
+    pub mode: ObservationMode,
+}
+
+impl RecordIdentifierQuery {
+    pub const fn new(
+        record_identifier_selection: RecordIdentifierSelection,
+        mode: ObservationMode,
+    ) -> Self {
+        Self {
+            record_identifier_selection,
+            mode,
+        }
+    }
+
+    pub fn contains(self, identifier: RecordIdentifier) -> bool {
+        self.record_identifier_selection.contains(identifier)
+    }
+}
+
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordObservation {
     pub query: RecordQuery,
@@ -395,6 +453,7 @@ pub struct QuestionsObserved {
 pub enum Observation {
     State,
     Records(RecordQuery),
+    RecordIdentifiers(RecordIdentifierQuery),
     Topics,
     Questions,
 }
