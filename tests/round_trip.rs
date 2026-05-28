@@ -27,8 +27,8 @@ fn exchange() -> ExchangeIdentifier {
     )
 }
 
-fn description() -> signal_persona_spirit::RecordDescription {
-    signal_persona_spirit::RecordDescription {
+fn description() -> signal_persona_spirit::RecordSummary {
+    signal_persona_spirit::RecordSummary {
         identifier: RecordIdentifier::new(1),
         topics: Topics::single(Topic::new("workspace")),
         kind: Kind::Decision,
@@ -39,7 +39,7 @@ fn description() -> signal_persona_spirit::RecordDescription {
 
 fn provenance() -> RecordProvenance {
     RecordProvenance {
-        description: description(),
+        summary: description(),
         date: Date::new(2026, 5, 20),
         time: Time::new(14, 30, 0),
     }
@@ -122,18 +122,18 @@ fn spirit_requests_round_trip() {
         Operation::Observe(Observation::Records(RecordQuery {
             topic: None,
             kind: None,
-            mode: ObservationMode::DescriptionOnly,
+            mode: ObservationMode::SummaryOnly,
         })),
         Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(
             RecordIdentifierSelection::Exact(RecordIdentifier::new(1)),
-            ObservationMode::DescriptionOnly,
+            ObservationMode::SummaryOnly,
         ))),
         Operation::Observe(Observation::Topics),
         Operation::Observe(Observation::Questions),
         Operation::Watch(Subscription::State),
         Operation::Watch(Subscription::Records(RecordSubscription {
             topic: None,
-            mode: ObservationMode::DescriptionOnly,
+            mode: ObservationMode::SummaryOnly,
         })),
         Operation::Unwatch(SubscriptionToken::State(StateSubscriptionToken {
             identifier: 1,
@@ -156,25 +156,17 @@ fn spirit_requests_round_trip() {
 fn spirit_replies_round_trip() {
     let replies = [
         Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1))),
-        Reply::StateObserved(StateObserved { state: state() }),
-        Reply::RecordsObserved(RecordsObserved {
-            records: vec![description()],
-        }),
-        Reply::RecordProvenancesObserved(RecordProvenancesObserved {
-            records: vec![provenance()],
-        }),
-        Reply::TopicsObserved(TopicsObserved {
-            topics: vec![TopicCount {
-                topic: Topic::new("workspace"),
-                entries: 2,
-            }],
-        }),
-        Reply::QuestionsObserved(QuestionsObserved {
-            questions: vec![QuestionSummary {
-                identifier: QuestionIdentifier::new("question-one"),
-                question: QuestionText::new("which intent wins?"),
-            }],
-        }),
+        Reply::StateObserved(StateObserved::new(state())),
+        Reply::RecordsObserved(RecordsObserved::new(vec![description()])),
+        Reply::RecordProvenancesObserved(RecordProvenancesObserved::new(vec![provenance()])),
+        Reply::TopicsObserved(TopicsObserved::new(vec![TopicCount {
+            topic: Topic::new("workspace"),
+            entries: 2,
+        }])),
+        Reply::QuestionsObserved(QuestionsObserved::new(vec![QuestionSummary {
+            identifier: QuestionIdentifier::new("question-one"),
+            question: QuestionText::new("which intent wins?"),
+        }])),
         Reply::SubscriptionOpened(SubscriptionOpened {
             token: SubscriptionToken::State(StateSubscriptionToken { identifier: 1 }),
             snapshot: SubscriptionSnapshot::State(state()),
@@ -197,6 +189,20 @@ fn spirit_replies_round_trip() {
     for reply in replies {
         assert_eq!(round_trip_reply(reply.clone()), reply);
     }
+}
+
+#[test]
+fn legacy_description_only_input_decodes_as_summary_only() {
+    let mut decoder = Decoder::new("(Observe (RecordIdentifiers ((Exact 1053) DescriptionOnly)))");
+    let operation = Operation::decode(&mut decoder).expect("legacy mode decodes");
+
+    assert_eq!(
+        operation,
+        Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(
+            RecordIdentifierSelection::Exact(RecordIdentifier::new(1053)),
+            ObservationMode::SummaryOnly,
+        )))
+    );
 }
 
 #[test]
@@ -256,7 +262,7 @@ fn spirit_request_exposes_contract_owned_kind() {
     assert_eq!(
         Operation::Watch(Subscription::Records(RecordSubscription {
             topic: None,
-            mode: ObservationMode::DescriptionOnly,
+            mode: ObservationMode::SummaryOnly,
         }))
         .kind(),
         OperationKind::Watch
@@ -337,24 +343,24 @@ fn spirit_canonical_examples_round_trip() {
         Operation::Observe(Observation::Records(RecordQuery {
             topic: None,
             kind: None,
-            mode: ObservationMode::DescriptionOnly,
+            mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records (None None DescriptionOnly)))",
+        "(Observe (Records (None None SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
             topic: Some(Topic::new("workspace")),
             kind: Some(Kind::Decision),
-            mode: ObservationMode::DescriptionOnly,
+            mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records ((Some workspace) (Some Decision) DescriptionOnly)))",
+        "(Observe (Records ((Some workspace) (Some Decision) SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(
             RecordIdentifierSelection::Exact(RecordIdentifier::new(1053)),
-            ObservationMode::DescriptionOnly,
+            ObservationMode::SummaryOnly,
         ))),
-        "(Observe (RecordIdentifiers ((Exact 1053) DescriptionOnly)))",
+        "(Observe (RecordIdentifiers ((Exact 1053) SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(
@@ -375,9 +381,9 @@ fn spirit_canonical_examples_round_trip() {
     round_trip_nota(
         Operation::Watch(Subscription::Records(RecordSubscription {
             topic: None,
-            mode: ObservationMode::DescriptionOnly,
+            mode: ObservationMode::SummaryOnly,
         })),
-        "(Watch (Records (None DescriptionOnly)))",
+        "(Watch (Records (None SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Unwatch(SubscriptionToken::Records(RecordSubscriptionToken {
@@ -390,19 +396,30 @@ fn spirit_canonical_examples_round_trip() {
         "(RecordAccepted 1)",
     );
     round_trip_nota(
-        Reply::RecordProvenancesObserved(RecordProvenancesObserved {
-            records: vec![provenance()],
-        }),
-        "(RecordProvenancesObserved ([((1 [workspace] Decision [description only] Maximum) 2026-05-20 14:30:00)]))",
+        Reply::StateObserved(StateObserved::new(state())),
+        "(StateObserved (Active (Some implementation)))",
     );
     round_trip_nota(
-        Reply::TopicsObserved(TopicsObserved {
-            topics: vec![TopicCount {
-                topic: Topic::new("workspace"),
-                entries: 2,
-            }],
-        }),
-        "(TopicsObserved ([(workspace 2)]))",
+        Reply::RecordsObserved(RecordsObserved::new(vec![description()])),
+        "(RecordsObserved [(1 [workspace] Decision [description only] Maximum)])",
+    );
+    round_trip_nota(
+        Reply::RecordProvenancesObserved(RecordProvenancesObserved::new(vec![provenance()])),
+        "(RecordProvenancesObserved [((1 [workspace] Decision [description only] Maximum) 2026-05-20 14:30:00)])",
+    );
+    round_trip_nota(
+        Reply::TopicsObserved(TopicsObserved::new(vec![TopicCount {
+            topic: Topic::new("workspace"),
+            entries: 2,
+        }])),
+        "(TopicsObserved [(workspace 2)])",
+    );
+    round_trip_nota(
+        Reply::QuestionsObserved(QuestionsObserved::new(vec![QuestionSummary {
+            identifier: QuestionIdentifier::new("question-one"),
+            question: QuestionText::new("which intent wins?"),
+        }])),
+        "(QuestionsObserved [(question-one [which intent wins?])])",
     );
     round_trip_nota(
         Event::RecordCaptured(RecordCaptured {

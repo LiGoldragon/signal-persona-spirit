@@ -237,12 +237,32 @@ pub enum Kind {
     Constraint,
 }
 
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
-)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ObservationMode {
-    DescriptionOnly,
+    SummaryOnly,
     WithProvenance,
+}
+
+impl NotaEncode for ObservationMode {
+    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
+        match self {
+            Self::SummaryOnly => encoder.write_pascal_identifier("SummaryOnly"),
+            Self::WithProvenance => encoder.write_pascal_identifier("WithProvenance"),
+        }
+    }
+}
+
+impl NotaDecode for ObservationMode {
+    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
+        match decoder.read_pascal_identifier()?.as_str() {
+            "SummaryOnly" | "DescriptionOnly" => Ok(Self::SummaryOnly),
+            "WithProvenance" => Ok(Self::WithProvenance),
+            other => Err(nota_codec::Error::UnknownVariant {
+                enum_name: "ObservationMode",
+                got: other.to_string(),
+            }),
+        }
+    }
 }
 
 pub type Certainty = Magnitude;
@@ -346,7 +366,7 @@ pub struct RecordSubscription {
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct RecordDescription {
+pub struct RecordSummary {
     pub identifier: RecordIdentifier,
     pub topics: Topics,
     pub kind: Kind,
@@ -356,7 +376,7 @@ pub struct RecordDescription {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordProvenance {
-    pub description: RecordDescription,
+    pub summary: RecordSummary,
     pub date: Date,
     pub time: Time,
 }
@@ -424,29 +444,89 @@ impl RecordAccepted {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct StateObserved {
-    pub state: PresenceView,
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
+pub struct StateObserved(PresenceView);
+
+impl StateObserved {
+    pub fn new(state: PresenceView) -> Self {
+        Self(state)
+    }
+
+    pub fn state(&self) -> &PresenceView {
+        &self.0
+    }
+
+    pub fn into_state(self) -> PresenceView {
+        self.0
+    }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct RecordsObserved {
-    pub records: Vec<RecordDescription>,
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
+pub struct RecordsObserved(Vec<RecordSummary>);
+
+impl RecordsObserved {
+    pub fn new(records: Vec<RecordSummary>) -> Self {
+        Self(records)
+    }
+
+    pub fn records(&self) -> &[RecordSummary] {
+        &self.0
+    }
+
+    pub fn into_records(self) -> Vec<RecordSummary> {
+        self.0
+    }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct RecordProvenancesObserved {
-    pub records: Vec<RecordProvenance>,
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
+pub struct RecordProvenancesObserved(Vec<RecordProvenance>);
+
+impl RecordProvenancesObserved {
+    pub fn new(records: Vec<RecordProvenance>) -> Self {
+        Self(records)
+    }
+
+    pub fn records(&self) -> &[RecordProvenance] {
+        &self.0
+    }
+
+    pub fn into_records(self) -> Vec<RecordProvenance> {
+        self.0
+    }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct TopicsObserved {
-    pub topics: Vec<TopicCount>,
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
+pub struct TopicsObserved(Vec<TopicCount>);
+
+impl TopicsObserved {
+    pub fn new(topics: Vec<TopicCount>) -> Self {
+        Self(topics)
+    }
+
+    pub fn topics(&self) -> &[TopicCount] {
+        &self.0
+    }
+
+    pub fn into_topics(self) -> Vec<TopicCount> {
+        self.0
+    }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
-pub struct QuestionsObserved {
-    pub questions: Vec<QuestionSummary>,
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
+pub struct QuestionsObserved(Vec<QuestionSummary>);
+
+impl QuestionsObserved {
+    pub fn new(questions: Vec<QuestionSummary>) -> Self {
+        Self(questions)
+    }
+
+    pub fn questions(&self) -> &[QuestionSummary] {
+        &self.0
+    }
+
+    pub fn into_questions(self) -> Vec<QuestionSummary> {
+        self.0
+    }
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
@@ -473,7 +553,7 @@ pub enum SubscriptionToken {
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
 pub enum SubscriptionSnapshot {
     State(PresenceView),
-    Records(Vec<RecordDescription>),
+    Records(Vec<RecordSummary>),
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -507,7 +587,7 @@ pub struct StateChanged {
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordCaptured {
-    pub record: RecordDescription,
+    pub record: RecordSummary,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]

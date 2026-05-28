@@ -23,7 +23,7 @@
   Unwatch ((SubscriptionToken))
 
   Kind (Decision Principle Correction Clarification Constraint)
-  ObservationMode (DescriptionOnly WithProvenance)
+  ObservationMode (SummaryOnly WithProvenance)
   Certainty Magnitude
   Mode ObservationMode
 
@@ -46,23 +46,23 @@
   RecordQuery [(Option Topic) (Option Kind) Mode]
   RecordObservation [RecordQuery]
   RecordSubscription [(Option Topic) Mode]
-  RecordDescription [RecordIdentifier Topics Kind Description Certainty]
-  RecordProvenance [RecordDescription Date Time]
+  RecordSummary [RecordIdentifier Topics Kind Description Certainty]
+  RecordProvenance [RecordSummary Date Time]
   TopicCount [Topic u64]
-  PresenceView [Presence FocusArea]
+  PresenceView [Presence (Option FocusArea)]
   QuestionSummary [QuestionIdentifier QuestionText]
   RecordAccepted [RecordIdentifier]
   StateObserved [PresenceView]
-  RecordsObserved [(Vec RecordDescription)]
+  RecordsObserved [(Vec RecordSummary)]
   RecordProvenancesObserved [(Vec RecordProvenance)]
   TopicsObserved [(Vec TopicCount)]
   QuestionsObserved [(Vec QuestionSummary)]
-  SubscriptionSnapshot ((State PresenceView) (Records (Vec RecordDescription)))
+  SubscriptionSnapshot ((State PresenceView) (Records (Vec RecordSummary)))
   SubscriptionOpened [SubscriptionToken SubscriptionSnapshot]
   SubscriptionRetracted [SubscriptionToken]
   RequestUnimplemented [UnimplementedReason]
   StateChanged [PresenceView]
-  RecordCaptured [RecordDescription]
+  RecordCaptured [RecordSummary]
 
   Date [u16 u8 u8]
   Time [u8 u8 u8]

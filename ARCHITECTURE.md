@@ -104,7 +104,7 @@ label is computed at observation publish time inside the daemon.
 | Every request variant is a contract-local verb in verb form. | `round_trip.rs` asserts each variant's NOTA head. |
 | Subscribe-shaped variants declare stream relations. | `signal_channel!` stream blocks bind subscribe/open/event/close. |
 | Retract-shaped close variants have typed close acknowledgements. | `SubscriptionRetracted` carries the typed `SubscriptionToken` sum and round-trips through RKYV and NOTA. |
-| Intent queries are description-first unless a richer mode is requested. | `ObservationMode::DescriptionOnly` is the explicit query mode used in canonical examples. |
+| Intent queries are description-first unless a richer mode is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
 | Intent record queries support the agent-useful filters needed for intent work. | `RecordQuery` carries optional `topic` and optional `kind` filters, with description-only and provenance modes; topic filtering matches membership in `Entry::topics`. `RecordIdentifierQuery` carries exact or inclusive range selection by `RecordIdentifier`. |
 | Agents can inspect the intent-topic catalog without reading every entry. | `Observation::Topics` returns `TopicsObserved` with one `TopicCount` per topic membership. |
 | Every submitted entry is one top-level psyche statement without client-provided capture time. | `Entry` carries one or more topics, kind, description, and certainty; repeated entries are the restatement signal. |
