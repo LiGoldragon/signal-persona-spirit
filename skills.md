@@ -46,5 +46,8 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 - Intent observations can select records by exact `RecordIdentifier`
   or an inclusive `RecordIdentifierRange` through
   `Observation::RecordIdentifiers`.
+- Intent entries are removed through the ordinary `Remove` verb by
+  `RecordIdentifier`; this is intent-store maintenance, not owner
+  lifecycle policy.
 - Mandatory `Tap`/`Untap` observability surface is part of the
   contract per persona-component discipline.

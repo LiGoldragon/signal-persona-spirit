@@ -32,6 +32,8 @@ The ordinary contract uses contract-local verbs:
   naming `State`, `Records`, `Topics`, `QuestionsPending`, etc.),
 - `Watch` / `Unwatch` (domain-specific subscriptions — payload names
   which stream class to open).
+- `Remove` (intent-store maintenance — payload is the `RecordIdentifier`
+  to delete from the daemon-owned store).
 
 Apply the verb-form rule per `intent/naming.nota` 19:45Z:
 `State` not `Statement`, `Record` not `Entry`-as-a-verb, `Observe` not
@@ -91,6 +93,7 @@ Sema observations rather than executable effect records.
 | `Unwatch` (domain state stream) | `StateSubscriptionToken` | `Retract` |
 | `Watch` (domain records stream) | `RecordsSubscription` | `Subscribe` |
 | `Unwatch` (domain records stream) | `RecordsSubscriptionToken` | `Retract` |
+| `Remove` | `RecordIdentifier` | `Retract` |
 | `Tap` (mandatory observability) | `ObserverFilter` | `Subscribe` |
 | `Untap` (mandatory observability) | `ObserverSubscriptionToken` | `Retract` |
 
@@ -106,6 +109,7 @@ label is computed at observation publish time inside the daemon.
 | Retract-shaped close variants have typed close acknowledgements. | `SubscriptionRetracted` carries the typed `SubscriptionToken` sum and round-trips through RKYV and NOTA. |
 | Intent queries return compact summaries unless provenance is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
 | Intent record queries support the agent-useful filters needed for intent work. | `RecordQuery` carries optional `topic` and optional `kind` filters, with description-only and provenance modes; topic filtering matches membership in `Entry::topics`. `RecordIdentifierQuery` carries exact or inclusive range selection by `RecordIdentifier`. |
+| Intent entries can be removed explicitly by identifier. | `Remove(RecordIdentifier)` round-trips through RKYV and NOTA and returns `RecordRemoved`. |
 | Agents can inspect the intent-topic catalog without reading every entry. | `Observation::Topics` returns `TopicsObserved` with one `TopicCount` per topic membership. |
 | Every submitted entry is one top-level psyche statement without client-provided capture time. | `Entry` carries one or more topics, kind, description, and certainty; repeated entries are the restatement signal. |
 | Spirit never accepts client-provided timestamps on `Record` requests. | `record_request_with_client_timestamp_shape_is_rejected` and `record_request_with_parenthesized_client_date_time_shape_is_rejected` fail old timestamp-bearing input shapes. |
