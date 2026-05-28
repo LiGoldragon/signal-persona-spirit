@@ -4,8 +4,8 @@ use signal_frame::{
 };
 use signal_persona_spirit::{
     Description, Entry, Frame, FrameBody, Kind, Observation, ObservationMode, Operation,
-    OperationKind, RecordQuery, Reply, RequestUnimplemented, Statement, StatementText, Topic,
-    Topics, UnimplementedReason,
+    OperationKind, RecordIdentifier, RecordQuery, Reply, RequestUnimplemented, Statement,
+    StatementText, Topic, Topics, UnimplementedReason,
 };
 use signal_sema::Magnitude;
 
@@ -51,6 +51,11 @@ impl signal_persona_spirit::OperationHandler for DispatchWitness {
         _payload: signal_persona_spirit::SubscriptionToken,
     ) -> Result<Reply, Self::Error> {
         self.handled.push(OperationKind::Unwatch);
+        Ok(unimplemented_reply())
+    }
+
+    async fn handle_remove(&mut self, _payload: RecordIdentifier) -> Result<Reply, Self::Error> {
+        self.handled.push(OperationKind::Remove);
         Ok(unimplemented_reply())
     }
 

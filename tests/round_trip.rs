@@ -9,11 +9,11 @@ use signal_persona_spirit::{
     OperationKind, OperationReceived, Presence, PresenceView, QuestionIdentifier, QuestionSummary,
     QuestionText, QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier,
     RecordIdentifierQuery, RecordIdentifierRange, RecordIdentifierSelection, RecordProvenance,
-    RecordProvenancesObserved, RecordQuery, RecordSubscription, RecordSubscriptionToken,
-    RecordsObserved, Reply, RequestUnimplemented, StateChanged, StateObserved,
-    StateSubscriptionToken, Statement, StatementText, Subscription, SubscriptionOpened,
-    SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time, Topic, TopicCount,
-    Topics, TopicsObserved, UnimplementedReason,
+    RecordProvenancesObserved, RecordQuery, RecordRemoved, RecordSubscription,
+    RecordSubscriptionToken, RecordsObserved, Reply, RequestUnimplemented, StateChanged,
+    StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
+    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time,
+    Topic, TopicCount, Topics, TopicsObserved, UnimplementedReason,
 };
 use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
@@ -141,6 +141,7 @@ fn spirit_requests_round_trip() {
         Operation::Unwatch(SubscriptionToken::Records(RecordSubscriptionToken {
             identifier: 2,
         })),
+        Operation::Remove(RecordIdentifier::new(1)),
         Operation::Tap(ObserverFilter::OperationsOnly),
         Operation::Untap(ObserverSubscriptionToken::new(SubscriptionTokenInner::new(
             3,
@@ -156,6 +157,7 @@ fn spirit_requests_round_trip() {
 fn spirit_replies_round_trip() {
     let replies = [
         Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1))),
+        Reply::RecordRemoved(RecordRemoved::new(RecordIdentifier::new(1))),
         Reply::StateObserved(StateObserved::new(state())),
         Reply::RecordsObserved(RecordsObserved::new(vec![description()])),
         Reply::RecordProvenancesObserved(RecordProvenancesObserved::new(vec![provenance()])),
@@ -259,6 +261,10 @@ fn spirit_request_exposes_contract_owned_kind() {
         OperationKind::State
     );
     assert_eq!(Operation::Record(entry()).kind(), OperationKind::Record);
+    assert_eq!(
+        Operation::Remove(RecordIdentifier::new(1)).kind(),
+        OperationKind::Remove
+    );
     assert_eq!(
         Operation::Watch(Subscription::Records(RecordSubscription {
             topic: None,
@@ -391,9 +397,14 @@ fn spirit_canonical_examples_round_trip() {
         })),
         "(Unwatch (Records (2)))",
     );
+    round_trip_nota(Operation::Remove(RecordIdentifier::new(1)), "(Remove 1)");
     round_trip_nota(
         Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1))),
         "(RecordAccepted 1)",
+    );
+    round_trip_nota(
+        Reply::RecordRemoved(RecordRemoved::new(RecordIdentifier::new(1))),
+        "(RecordRemoved 1)",
     );
     round_trip_nota(
         Reply::StateObserved(StateObserved::new(state())),

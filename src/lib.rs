@@ -444,6 +444,21 @@ impl RecordAccepted {
     }
 }
 
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, Copy, PartialEq, Eq,
+)]
+pub struct RecordRemoved(RecordIdentifier);
+
+impl RecordRemoved {
+    pub const fn new(identifier: RecordIdentifier) -> Self {
+        Self(identifier)
+    }
+
+    pub const fn identifier(self) -> RecordIdentifier {
+        self.0
+    }
+}
+
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
 pub struct StateObserved(PresenceView);
 
