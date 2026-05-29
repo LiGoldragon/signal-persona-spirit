@@ -26,7 +26,7 @@
 
   Kind (Decision Principle Correction Clarification Constraint)
   ObservationMode (SummaryOnly WithProvenance)
-  Certainty (None Minimum VeryLow Low Medium High VeryHigh Maximum)
+  Certainty Magnitude
   Mode ObservationMode
 
   Topic [String]

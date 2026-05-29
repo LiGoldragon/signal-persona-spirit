@@ -59,7 +59,7 @@ qualified `::spirit::*` paths, the legacy invocation retires.
 ## Description-only discipline
 
 The record shape carries one agent-clarified `Description`, a
-`Kind`, optional certainty, daemon-stamped time, and one or more
+`Kind`, required certainty, daemon-stamped time, and one or more
 user-creatable topic strings. Verbatim/context payloads from
 earlier shapes are gone. The wire reply to a `Record` operation is
 `(RecordAccepted N)` — terse; no echo of the submitted content.
@@ -67,8 +67,12 @@ Daemon-stamped timestamps: clients do not supply capture time. Any
 new topic word a `Record` uses is registered at the wire layer; no
 pre-declared enum. Topic queries match membership in the entry's
 topic vector, either as no topic filter, partial one-or-more topic
-matching, or full every-topic matching. Certainty is required on
-records as local optional certainty: `None` means confidence withdrawn and nominated for removal, while `Minimum` remains weak but real intent. Observation filters can select no certainty filter, exact certainty, at-most certainty, or at-least certainty. Removal candidate review uses exact `None` certainty.
+matching, or full every-topic matching. Certainty is the shared
+`Magnitude` scale: `Zero` means confidence withdrawn and nominated
+for removal in Spirit, while `Minimum` remains weak but real intent.
+Observation filters can select no certainty filter, exact certainty,
+at-most certainty, or at-least certainty. Removal candidate review
+uses exact `Zero` certainty.
 
 ## Goals
 

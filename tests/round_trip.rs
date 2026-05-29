@@ -4,8 +4,8 @@ use signal_frame::{
     SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    Certainty, CertaintySelection, Date, Description, EffectEmitted, Entry, Event, FocusArea,
-    Frame, FrameBody, Kind, Observation, ObservationMode, ObserverFilter, ObserverFilterMatch,
+    CertaintySelection, Date, Description, EffectEmitted, Entry, Event, FocusArea, Frame,
+    FrameBody, Kind, Observation, ObservationMode, ObserverFilter, ObserverFilterMatch,
     ObserverSubscriptionToken, Operation, OperationKind, OperationReceived, Presence, PresenceView,
     QuestionIdentifier, QuestionSummary, QuestionText, QuestionsObserved, RecordAccepted,
     RecordCaptured, RecordIdentifier, RecordIdentifierQuery, RecordIdentifierRange,
@@ -34,7 +34,7 @@ fn description() -> signal_persona_spirit::RecordSummary {
         topics: Topics::single(Topic::new("workspace")),
         kind: Kind::Decision,
         description: Description::new("description only"),
-        certainty: Certainty::known(Magnitude::Maximum),
+        certainty: Magnitude::Maximum,
     }
 }
 
@@ -51,7 +51,7 @@ fn entry() -> Entry {
         topics: Topics::single(Topic::new("workspace")),
         kind: Kind::Decision,
         description: Description::new("description only"),
-        certainty: Certainty::known(Magnitude::Maximum),
+        certainty: Magnitude::Maximum,
     }
 }
 
@@ -343,7 +343,7 @@ fn spirit_canonical_examples_round_trip() {
     );
     let mut high_entry = entry();
     high_entry.description = Description::new("high description");
-    high_entry.certainty = Certainty::known(Magnitude::High);
+    high_entry.certainty = Magnitude::High;
     round_trip_nota(
         Operation::Record(high_entry),
         "(Record ([workspace] Decision [high description] High))",
@@ -351,17 +351,10 @@ fn spirit_canonical_examples_round_trip() {
     let mut candidate_entry = entry();
     candidate_entry.kind = Kind::Correction;
     candidate_entry.description = Description::new("candidate description");
-    candidate_entry.certainty = Certainty::removal_candidate();
+    candidate_entry.certainty = Magnitude::Zero;
     round_trip_nota(
         Operation::Record(candidate_entry.clone()),
-        "(Record ([workspace] Correction [candidate description] None))",
-    );
-    decode_only_nota(
-        "(Record ([workspace] Correction [candidate description] (Some Minimum)))",
-        Operation::Record(Entry {
-            certainty: Certainty::known(Magnitude::Minimum),
-            ..candidate_entry
-        }),
+        "(Record ([workspace] Correction [candidate description] Zero))",
     );
     let mut multi_topic_entry = entry();
     multi_topic_entry.topics = Topics::new(vec![Topic::new("spirit"), Topic::new("nota")]);
@@ -405,7 +398,7 @@ fn spirit_canonical_examples_round_trip() {
                 Topic::new("nota"),
             ]),
             kind: None,
-            certainty_selection: CertaintySelection::AtMost(Certainty::known(Magnitude::Low)),
+            certainty_selection: CertaintySelection::AtMost(Magnitude::Low),
             mode: ObservationMode::SummaryOnly,
         })),
         "(Observe (Records ((Partial [spirit nota]) None (AtMost Low) SummaryOnly)))",
@@ -423,7 +416,7 @@ fn spirit_canonical_examples_round_trip() {
         Operation::Observe(Observation::Records(RecordQuery::removal_candidates(
             ObservationMode::WithProvenance,
         ))),
-        "(Observe (Records ((Any []) None (Exact None) WithProvenance)))",
+        "(Observe (Records ((Any []) None (Exact Zero) WithProvenance)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(

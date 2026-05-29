@@ -32,7 +32,8 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
   It carries one or more user-created topic strings; topic filters match
   membership in that topic vector.
   Restatement is represented by repeated `Entry` records, not by nesting
-  vectors. Certainty is optional: `None` nominates a record for removal, while `Minimum` remains weak but real intent.
+  vectors. Certainty is required `Magnitude`: `Zero` nominates a
+  record for removal, while `Minimum` remains weak but real intent.
 - Capture time appears only in daemon-produced provenance as a bare
   `YYYY-MM-DD` date field and a bare `HH:MM:SS` time field.
 - `RecordIdentifier` is output-only and minted by `persona-spirit`.
@@ -46,8 +47,9 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 - Intent observations can select all topics with `Any`, one-or-more
   requested topics with `Partial`, or every requested topic with
   `Full`.
-- Intent observations can filter optional certainty with `Any`, `Exact`,
-  `AtMost`, or `AtLeast`. Removal-candidate review is the exact `None` query.
+- Intent observations can filter required `Magnitude` certainty with
+  `Any`, `Exact`, `AtMost`, or `AtLeast`. Removal-candidate review is
+  the exact `Zero` query.
 - Intent observations can select records by exact `RecordIdentifier`
   or an inclusive `RecordIdentifierRange` through
   `Observation::RecordIdentifiers`.

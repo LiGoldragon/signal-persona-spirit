@@ -19,7 +19,7 @@
   Watch [(Subscription Subscription)]
   Unwatch [(SubscriptionToken SubscriptionToken)]
   Kind [Decision Principle Correction Clarification Constraint]
-  Magnitude [Minimum VeryLow Low Medium High VeryHigh Maximum]
+  Magnitude [Minimum VeryLow Low Medium High VeryHigh Maximum Zero]
   ObservationMode [DescriptionOnly WithProvenance]
   Topic (String)
   Topics ((Vec Topic))

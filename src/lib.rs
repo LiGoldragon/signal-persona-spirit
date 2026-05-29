@@ -290,123 +290,7 @@ pub struct Statement {
     pub text: StatementText,
 }
 
-#[derive(
-    Archive,
-    RkyvSerialize,
-    RkyvDeserialize,
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-)]
-#[repr(u8)]
-pub enum Certainty {
-    None,
-    Minimum,
-    VeryLow,
-    Low,
-    Medium,
-    High,
-    VeryHigh,
-    Maximum,
-}
-
-impl Certainty {
-    pub const fn known(magnitude: Magnitude) -> Self {
-        match magnitude {
-            Magnitude::Minimum => Self::Minimum,
-            Magnitude::VeryLow => Self::VeryLow,
-            Magnitude::Low => Self::Low,
-            Magnitude::Medium => Self::Medium,
-            Magnitude::High => Self::High,
-            Magnitude::VeryHigh => Self::VeryHigh,
-            Magnitude::Maximum => Self::Maximum,
-        }
-    }
-
-    pub const fn removal_candidate() -> Self {
-        Self::None
-    }
-
-    pub const fn as_option(self) -> Option<Magnitude> {
-        match self {
-            Self::None => None,
-            Self::Minimum => Some(Magnitude::Minimum),
-            Self::VeryLow => Some(Magnitude::VeryLow),
-            Self::Low => Some(Magnitude::Low),
-            Self::Medium => Some(Magnitude::Medium),
-            Self::High => Some(Magnitude::High),
-            Self::VeryHigh => Some(Magnitude::VeryHigh),
-            Self::Maximum => Some(Magnitude::Maximum),
-        }
-    }
-
-    pub const fn is_removal_candidate(self) -> bool {
-        matches!(self, Self::None)
-    }
-}
-
-impl From<Magnitude> for Certainty {
-    fn from(magnitude: Magnitude) -> Self {
-        Self::known(magnitude)
-    }
-}
-
-impl From<Option<Magnitude>> for Certainty {
-    fn from(magnitude: Option<Magnitude>) -> Self {
-        match magnitude {
-            Some(magnitude) => Self::known(magnitude),
-            None => Self::removal_candidate(),
-        }
-    }
-}
-
-impl From<Certainty> for Option<Magnitude> {
-    fn from(certainty: Certainty) -> Self {
-        certainty.as_option()
-    }
-}
-
-impl NotaEncode for Certainty {
-    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
-        encoder.write_pascal_identifier(match self {
-            Self::None => "None",
-            Self::Minimum => "Minimum",
-            Self::VeryLow => "VeryLow",
-            Self::Low => "Low",
-            Self::Medium => "Medium",
-            Self::High => "High",
-            Self::VeryHigh => "VeryHigh",
-            Self::Maximum => "Maximum",
-        })
-    }
-}
-
-impl NotaDecode for Certainty {
-    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        if decoder.peek_is_record_start()? {
-            return Option::<Magnitude>::decode(decoder).map(Self::from);
-        }
-        match decoder.read_pascal_identifier()?.as_str() {
-            "None" => Ok(Self::None),
-            "Minimum" => Ok(Self::Minimum),
-            "VeryLow" => Ok(Self::VeryLow),
-            "Low" => Ok(Self::Low),
-            "Medium" => Ok(Self::Medium),
-            "High" => Ok(Self::High),
-            "VeryHigh" => Ok(Self::VeryHigh),
-            "Maximum" => Ok(Self::Maximum),
-            other => Err(nota_codec::Error::UnknownVariant {
-                enum_name: "Certainty",
-                got: other.to_string(),
-            }),
-        }
-    }
-}
+pub type Certainty = Magnitude;
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct Entry {
@@ -527,7 +411,7 @@ pub enum CertaintySelection {
 
 impl CertaintySelection {
     pub const fn removal_candidates() -> Self {
-        Self::Exact(Certainty::removal_candidate())
+        Self::Exact(Magnitude::Zero)
     }
 
     pub fn matches(self, certainty: Certainty) -> bool {
