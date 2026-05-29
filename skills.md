@@ -46,6 +46,9 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 - Intent observations can select all topics with `Any`, one-or-more
   requested topics with `Partial`, or every requested topic with
   `Full`.
+- Intent observations can filter certainty with `Any`, `Exact`,
+  `AtMost`, or `AtLeast`. Removal-candidate review is the exact
+  `Minimum` certainty query.
 - Intent observations can select records by exact `RecordIdentifier`
   or an inclusive `RecordIdentifierRange` through
   `Observation::RecordIdentifiers`.

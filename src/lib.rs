@@ -5,7 +5,9 @@
 //! Runtime actors, sockets, storage, classifier logic, and downstream
 //! owner-Mutate forwarding live in `persona-spirit`.
 
-use nota_codec::{Decoder, Encoder, NotaDecode, NotaEncode, NotaEnum, NotaRecord, NotaTransparent};
+use nota_codec::{
+    Decoder, Encoder, NotaDecode, NotaEncode, NotaEnum, NotaRecord, NotaTransparent, Token,
+};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use signal_frame::signal_channel;
 use signal_sema::{Magnitude, SemaObservation};
@@ -396,11 +398,88 @@ impl NotaDecode for TopicSelection {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+)]
+pub enum CertaintySelection {
+    Any,
+    Exact(Magnitude),
+    AtMost(Magnitude),
+    AtLeast(Magnitude),
+}
+
+impl CertaintySelection {
+    pub const fn removal_candidates() -> Self {
+        Self::Exact(Magnitude::Minimum)
+    }
+
+    pub fn matches(self, certainty: Magnitude) -> bool {
+        match self {
+            Self::Any => true,
+            Self::Exact(expected) => certainty == expected,
+            Self::AtMost(maximum) => certainty <= maximum,
+            Self::AtLeast(minimum) => certainty >= minimum,
+        }
+    }
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
 pub struct RecordQuery {
     pub topic_selection: TopicSelection,
     pub kind: Option<Kind>,
+    pub certainty_selection: CertaintySelection,
     pub mode: ObservationMode,
+}
+
+impl RecordQuery {
+    pub fn removal_candidates(mode: ObservationMode) -> Self {
+        Self {
+            topic_selection: TopicSelection::any(),
+            kind: None,
+            certainty_selection: CertaintySelection::removal_candidates(),
+            mode,
+        }
+    }
+}
+
+impl NotaEncode for RecordQuery {
+    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
+        encoder.start_record_untagged()?;
+        self.topic_selection.encode(encoder)?;
+        self.kind.encode(encoder)?;
+        self.certainty_selection.encode(encoder)?;
+        self.mode.encode(encoder)?;
+        encoder.end_record()
+    }
+}
+
+impl NotaDecode for RecordQuery {
+    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
+        decoder.expect_positional_record_start("RecordQuery", 4)?;
+        let topic_selection = TopicSelection::decode(decoder)?;
+        let kind = Option::<Kind>::decode(decoder)?;
+        let next = decoder.peek_token()?;
+        let (certainty_selection, mode) = match next {
+            Some(Token::Ident(name))
+                if name == "SummaryOnly"
+                    || name == "WithProvenance"
+                    || name == "DescriptionOnly" =>
+            {
+                (CertaintySelection::Any, ObservationMode::decode(decoder)?)
+            }
+            _ => (
+                CertaintySelection::decode(decoder)?,
+                ObservationMode::decode(decoder)?,
+            ),
+        };
+        decoder.expect_record_end()?;
+        Ok(Self {
+            topic_selection,
+            kind,
+            certainty_selection,
+            mode,
+        })
+    }
 }
 
 #[derive(

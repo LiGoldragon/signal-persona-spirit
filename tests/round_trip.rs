@@ -4,16 +4,17 @@ use signal_frame::{
     SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    Date, Description, EffectEmitted, Entry, Event, FocusArea, Frame, FrameBody, Kind, Observation,
-    ObservationMode, ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken, Operation,
-    OperationKind, OperationReceived, Presence, PresenceView, QuestionIdentifier, QuestionSummary,
-    QuestionText, QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier,
-    RecordIdentifierQuery, RecordIdentifierRange, RecordIdentifierSelection, RecordProvenance,
-    RecordProvenancesObserved, RecordQuery, RecordRemoved, RecordSubscription,
-    RecordSubscriptionToken, RecordsObserved, Reply, RequestUnimplemented, StateChanged,
-    StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
-    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time,
-    Topic, TopicCount, TopicSelection, Topics, TopicsObserved, UnimplementedReason,
+    CertaintySelection, Date, Description, EffectEmitted, Entry, Event, FocusArea, Frame,
+    FrameBody, Kind, Observation, ObservationMode, ObserverFilter, ObserverFilterMatch,
+    ObserverSubscriptionToken, Operation, OperationKind, OperationReceived, Presence, PresenceView,
+    QuestionIdentifier, QuestionSummary, QuestionText, QuestionsObserved, RecordAccepted,
+    RecordCaptured, RecordIdentifier, RecordIdentifierQuery, RecordIdentifierRange,
+    RecordIdentifierSelection, RecordProvenance, RecordProvenancesObserved, RecordQuery,
+    RecordRemoved, RecordSubscription, RecordSubscriptionToken, RecordsObserved, Reply,
+    RequestUnimplemented, StateChanged, StateObserved, StateSubscriptionToken, Statement,
+    StatementText, Subscription, SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot,
+    SubscriptionToken, Time, Topic, TopicCount, TopicSelection, Topics, TopicsObserved,
+    UnimplementedReason,
 };
 use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
@@ -111,6 +112,15 @@ where
     );
 }
 
+fn decode_only_nota<T>(text: &str, expected: T)
+where
+    T: NotaDecode + PartialEq + std::fmt::Debug,
+{
+    let mut decoder = Decoder::new(text);
+    let recovered = T::decode(&mut decoder).expect("decode nota text");
+    assert_eq!(recovered, expected);
+}
+
 #[test]
 fn spirit_requests_round_trip() {
     let requests = [
@@ -122,6 +132,7 @@ fn spirit_requests_round_trip() {
         Operation::Observe(Observation::Records(RecordQuery {
             topic_selection: TopicSelection::any(),
             kind: None,
+            certainty_selection: CertaintySelection::Any,
             mode: ObservationMode::SummaryOnly,
         })),
         Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(
@@ -349,17 +360,28 @@ fn spirit_canonical_examples_round_trip() {
         Operation::Observe(Observation::Records(RecordQuery {
             topic_selection: TopicSelection::any(),
             kind: None,
+            certainty_selection: CertaintySelection::Any,
             mode: ObservationMode::SummaryOnly,
         })),
+        "(Observe (Records ((Any []) None Any SummaryOnly)))",
+    );
+    decode_only_nota(
         "(Observe (Records ((Any []) None SummaryOnly)))",
+        Operation::Observe(Observation::Records(RecordQuery {
+            topic_selection: TopicSelection::any(),
+            kind: None,
+            certainty_selection: CertaintySelection::Any,
+            mode: ObservationMode::SummaryOnly,
+        })),
     );
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
             topic_selection: TopicSelection::partial(vec![Topic::new("workspace")]),
             kind: Some(Kind::Decision),
+            certainty_selection: CertaintySelection::Any,
             mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records ((Partial [workspace]) (Some Decision) SummaryOnly)))",
+        "(Observe (Records ((Partial [workspace]) (Some Decision) Any SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
@@ -368,17 +390,25 @@ fn spirit_canonical_examples_round_trip() {
                 Topic::new("nota"),
             ]),
             kind: None,
+            certainty_selection: CertaintySelection::AtMost(Magnitude::Low),
             mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records ((Partial [spirit nota]) None SummaryOnly)))",
+        "(Observe (Records ((Partial [spirit nota]) None (AtMost Low) SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
             topic_selection: TopicSelection::full(vec![Topic::new("spirit"), Topic::new("nota")]),
             kind: None,
+            certainty_selection: CertaintySelection::Any,
             mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records ((Full [spirit nota]) None SummaryOnly)))",
+        "(Observe (Records ((Full [spirit nota]) None Any SummaryOnly)))",
+    );
+    round_trip_nota(
+        Operation::Observe(Observation::Records(RecordQuery::removal_candidates(
+            ObservationMode::WithProvenance,
+        ))),
+        "(Observe (Records ((Any []) None (Exact Minimum) WithProvenance)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(

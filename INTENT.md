@@ -67,7 +67,11 @@ Daemon-stamped timestamps: clients do not supply capture time. Any
 new topic word a `Record` uses is registered at the wire layer; no
 pre-declared enum. Topic queries match membership in the entry's
 topic vector, either as no topic filter, partial one-or-more topic
-matching, or full every-topic matching.
+matching, or full every-topic matching. Certainty is required on
+records as `Magnitude`; there is no absent certainty on stored
+records. Observation filters can select no certainty filter, exact
+certainty, at-most certainty, or at-least certainty. Removal
+candidate review uses exact `Minimum` certainty.
 
 ## Goals
 

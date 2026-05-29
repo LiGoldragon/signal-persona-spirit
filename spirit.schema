@@ -33,6 +33,7 @@
   Topics [(Vec Topic)]
   MatchKind (Any Partial Full)
   TopicSelection [MatchKind (Vec Topic)]
+  CertaintySelection (Any (Exact Certainty) (AtMost Certainty) (AtLeast Certainty))
   Description [String]
   StatementText [String]
   FocusArea [String]
@@ -47,7 +48,7 @@
 
   Entry [Topics Kind Description Certainty]
   Statement [StatementText]
-  RecordQuery [TopicSelection (Option Kind) Mode]
+  RecordQuery [TopicSelection (Option Kind) CertaintySelection Mode]
   RecordObservation [RecordQuery]
   RecordSubscription [(Option Topic) Mode]
   RecordSummary [RecordIdentifier Topics Kind Description Certainty]
