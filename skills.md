@@ -43,6 +43,9 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
   project to Sema `Retract`.
 - Intent observation is description-first unless the caller asks for
   provenance.
+- Intent observations can select all topics with `Any`, one-or-more
+  requested topics with `Partial`, or every requested topic with
+  `Full`.
 - Intent observations can select records by exact `RecordIdentifier`
   or an inclusive `RecordIdentifierRange` through
   `Observation::RecordIdentifiers`.

@@ -62,6 +62,14 @@ impl Topics {
         self.0.iter().any(|candidate| candidate == topic)
     }
 
+    pub fn contains_any(&self, topics: &Topics) -> bool {
+        topics.as_slice().iter().any(|topic| self.contains(topic))
+    }
+
+    pub fn contains_all(&self, topics: &Topics) -> bool {
+        topics.as_slice().iter().all(|topic| self.contains(topic))
+    }
+
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -289,9 +297,108 @@ pub struct Entry {
     pub certainty: Magnitude,
 }
 
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+)]
+pub enum MatchKind {
+    Any,
+    Partial,
+    Full,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
+pub struct TopicSelection {
+    pub match_kind: MatchKind,
+    pub topics: Vec<Topic>,
+}
+
+impl TopicSelection {
+    pub fn any() -> Self {
+        Self {
+            match_kind: MatchKind::Any,
+            topics: Vec::new(),
+        }
+    }
+
+    pub fn partial(topics: Vec<Topic>) -> Self {
+        Self {
+            match_kind: MatchKind::Partial,
+            topics,
+        }
+    }
+
+    pub fn full(topics: Vec<Topic>) -> Self {
+        Self {
+            match_kind: MatchKind::Full,
+            topics,
+        }
+    }
+
+    pub fn matches(&self, topics: &Topics) -> bool {
+        match self.match_kind {
+            MatchKind::Any => true,
+            MatchKind::Partial => self.topics.iter().any(|topic| topics.contains(topic)),
+            MatchKind::Full => {
+                !self.topics.is_empty() && self.topics.iter().all(|topic| topics.contains(topic))
+            }
+        }
+    }
+
+    fn validate(&self) -> nota_codec::Result<()> {
+        match self.match_kind {
+            MatchKind::Any if self.topics.is_empty() => Ok(()),
+            MatchKind::Any => Err(nota_codec::Error::Validation {
+                type_name: "TopicSelection",
+                message: "Any topic selection must not carry topics".to_string(),
+            }),
+            MatchKind::Partial | MatchKind::Full if self.topics.is_empty() => {
+                Err(nota_codec::Error::Validation {
+                    type_name: "TopicSelection",
+                    message: "Partial and Full topic selections must carry at least one topic"
+                        .to_string(),
+                })
+            }
+            MatchKind::Partial | MatchKind::Full => {
+                let mut seen = std::collections::BTreeSet::<&str>::new();
+                for topic in &self.topics {
+                    if !seen.insert(topic.as_str()) {
+                        return Err(nota_codec::Error::Validation {
+                            type_name: "TopicSelection",
+                            message: format!("topic selection repeats topic {}", topic.as_str()),
+                        });
+                    }
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
+impl NotaEncode for TopicSelection {
+    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
+        self.validate()?;
+        encoder.start_record_untagged()?;
+        self.match_kind.encode(encoder)?;
+        self.topics.encode(encoder)?;
+        encoder.end_record()
+    }
+}
+
+impl NotaDecode for TopicSelection {
+    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
+        decoder.expect_positional_record_start("TopicSelection", 2)?;
+        let match_kind = MatchKind::decode(decoder)?;
+        let topics = Vec::<Topic>::decode(decoder)?;
+        decoder.expect_record_end()?;
+        let selection = Self { match_kind, topics };
+        selection.validate()?;
+        Ok(selection)
+    }
+}
+
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordQuery {
-    pub topic: Option<Topic>,
+    pub topic_selection: TopicSelection,
     pub kind: Option<Kind>,
     pub mode: ObservationMode,
 }

@@ -13,7 +13,7 @@ use signal_persona_spirit::{
     RecordSubscriptionToken, RecordsObserved, Reply, RequestUnimplemented, StateChanged,
     StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
     SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time,
-    Topic, TopicCount, Topics, TopicsObserved, UnimplementedReason,
+    Topic, TopicCount, TopicSelection, Topics, TopicsObserved, UnimplementedReason,
 };
 use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
@@ -120,7 +120,7 @@ fn spirit_requests_round_trip() {
         Operation::Record(entry()),
         Operation::Observe(Observation::State),
         Operation::Observe(Observation::Records(RecordQuery {
-            topic: None,
+            topic_selection: TopicSelection::any(),
             kind: None,
             mode: ObservationMode::SummaryOnly,
         })),
@@ -347,19 +347,38 @@ fn spirit_canonical_examples_round_trip() {
     round_trip_nota(Operation::Observe(Observation::State), "(Observe State)");
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
-            topic: None,
+            topic_selection: TopicSelection::any(),
             kind: None,
             mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records (None None SummaryOnly)))",
+        "(Observe (Records ((Any []) None SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
-            topic: Some(Topic::new("workspace")),
+            topic_selection: TopicSelection::partial(vec![Topic::new("workspace")]),
             kind: Some(Kind::Decision),
             mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records ((Some workspace) (Some Decision) SummaryOnly)))",
+        "(Observe (Records ((Partial [workspace]) (Some Decision) SummaryOnly)))",
+    );
+    round_trip_nota(
+        Operation::Observe(Observation::Records(RecordQuery {
+            topic_selection: TopicSelection::partial(vec![
+                Topic::new("spirit"),
+                Topic::new("nota"),
+            ]),
+            kind: None,
+            mode: ObservationMode::SummaryOnly,
+        })),
+        "(Observe (Records ((Partial [spirit nota]) None SummaryOnly)))",
+    );
+    round_trip_nota(
+        Operation::Observe(Observation::Records(RecordQuery {
+            topic_selection: TopicSelection::full(vec![Topic::new("spirit"), Topic::new("nota")]),
+            kind: None,
+            mode: ObservationMode::SummaryOnly,
+        })),
+        "(Observe (Records ((Full [spirit nota]) None SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(

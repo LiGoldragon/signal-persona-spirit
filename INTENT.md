@@ -66,7 +66,8 @@ earlier shapes are gone. The wire reply to a `Record` operation is
 Daemon-stamped timestamps: clients do not supply capture time. Any
 new topic word a `Record` uses is registered at the wire layer; no
 pre-declared enum. Topic queries match membership in the entry's
-topic vector.
+topic vector, either as no topic filter, partial one-or-more topic
+matching, or full every-topic matching.
 
 ## Goals
 

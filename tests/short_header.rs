@@ -5,7 +5,7 @@ use signal_frame::{
 use signal_persona_spirit::{
     Description, Entry, Frame, FrameBody, Kind, Observation, ObservationMode, Operation,
     OperationKind, RecordIdentifier, RecordQuery, Reply, RequestUnimplemented, Statement,
-    StatementText, Topic, Topics, UnimplementedReason,
+    StatementText, Topic, TopicSelection, Topics, UnimplementedReason,
 };
 use signal_sema::Magnitude;
 
@@ -189,11 +189,11 @@ fn generated_operation_dispatch_routes_by_short_header() {
 #[test]
 fn nested_query_shape_sets_sub_enum_slots() {
     let frame = Operation::Observe(Observation::Records(RecordQuery {
-        topic: None,
+        topic_selection: TopicSelection::any(),
         kind: None,
         mode: ObservationMode::WithProvenance,
     }))
     .into_frame(exchange());
 
-    assert_eq!(frame.short_header(), header([2, 1, 1, 0, 0, 0, 0, 0]));
+    assert_eq!(frame.short_header(), header([2, 1, 0, 1, 0, 0, 0, 0]));
 }
