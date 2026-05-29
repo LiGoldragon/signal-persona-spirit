@@ -1,6 +1,6 @@
 use nota_codec::{Decoder, NotaDecode};
 use signal_persona_spirit::{
-    Entry, Kind, Operation,
+    Certainty, Entry, Kind, Operation,
     migration::{V010ToV011, V020ToV030, v010, v020},
 };
 use signal_sema::Magnitude;
@@ -36,7 +36,7 @@ fn v010_record_entry_projects_to_current_entry_shape() {
     assert_eq!(current.topics.as_slice()[0].as_str(), "workspace");
     assert_eq!(current.kind, Kind::Decision);
     assert_eq!(current.description.as_str(), "description");
-    assert_eq!(current.certainty, Magnitude::Maximum);
+    assert_eq!(current.certainty, Certainty::known(Magnitude::Maximum));
 }
 
 #[test]
@@ -52,7 +52,7 @@ fn v010_nota_record_projects_to_current_operation() {
     let Operation::Record(entry) = current else {
         panic!("expected current Record operation");
     };
-    assert_eq!(entry.certainty, Magnitude::Medium);
+    assert_eq!(entry.certainty, Certainty::known(Magnitude::Medium));
     assert_eq!(entry.description.as_str(), "description");
     assert_eq!(entry.topics.as_slice()[0].as_str(), "workspace");
 }
@@ -75,5 +75,5 @@ fn v020_record_entry_projects_to_multi_topic_current_entry_shape() {
         current.description.as_str(),
         "single topic becomes topic vector"
     );
-    assert_eq!(current.certainty, Magnitude::High);
+    assert_eq!(current.certainty, Certainty::known(Magnitude::High));
 }

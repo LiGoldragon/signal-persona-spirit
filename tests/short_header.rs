@@ -3,9 +3,10 @@ use signal_frame::{
     short_header_from_length_prefixed,
 };
 use signal_persona_spirit::{
-    CertaintySelection, Description, Entry, Frame, FrameBody, Kind, Observation, ObservationMode,
-    Operation, OperationKind, RecordIdentifier, RecordQuery, Reply, RequestUnimplemented,
-    Statement, StatementText, Topic, TopicSelection, Topics, UnimplementedReason,
+    Certainty, CertaintySelection, Description, Entry, Frame, FrameBody, Kind, Observation,
+    ObservationMode, Operation, OperationKind, RecordIdentifier, RecordQuery, Reply,
+    RequestUnimplemented, Statement, StatementText, Topic, TopicSelection, Topics,
+    UnimplementedReason,
 };
 use signal_sema::Magnitude;
 
@@ -105,7 +106,7 @@ fn entry() -> Entry {
         topics: Topics::single(Topic::new("workspace")),
         kind: Kind::Decision,
         description: Description::new("schema header"),
-        certainty: Magnitude::Maximum,
+        certainty: Certainty::known(Magnitude::Maximum),
     }
 }
 
@@ -121,7 +122,7 @@ fn header(bytes: [u8; 8]) -> ShortHeader {
 
 #[test]
 fn record_request_short_header_is_schema_derived_and_peekable() {
-    let expected = header([1, 0, 6, 0, 0, 0, 0, 0]);
+    let expected = header([1, 0, 7, 0, 0, 0, 0, 0]);
     let frame = Operation::Record(entry()).into_frame(exchange());
 
     assert_eq!(frame.short_header(), expected);

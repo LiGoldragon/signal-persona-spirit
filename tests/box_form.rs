@@ -1,4 +1,4 @@
-use signal_persona_spirit::{Description, Entry, Kind, Topic, Topics};
+use signal_persona_spirit::{Certainty, Description, Entry, Kind, Topic, Topics};
 use signal_sema::Magnitude;
 
 fn entry() -> Entry {
@@ -6,7 +6,7 @@ fn entry() -> Entry {
         topics: Topics::single(Topic::new("workspace")),
         kind: Kind::Decision,
         description: Description::new("schema box description"),
-        certainty: Magnitude::High,
+        certainty: Certainty::known(Magnitude::High),
     }
 }
 

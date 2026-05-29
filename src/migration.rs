@@ -3,7 +3,7 @@
 use signal_sema::Magnitude;
 use version_projection::{ProjectionError, VersionProjection};
 
-use crate::{Description, Entry, Kind, Operation, Statement, Topic, Topics};
+use crate::{Certainty, Description, Entry, Kind, Operation, Statement, Topic, Topics};
 
 pub mod v010 {
     use nota_codec::{NotaEnum, NotaRecord, NotaTransparent};
@@ -202,7 +202,7 @@ impl VersionProjection<v010::Entry, Entry> for V010ToV011 {
             topics: Topics::single(source.topic.into_current()),
             kind: source.kind.into(),
             description: source.summary.into_description(),
-            certainty: source.certainty.into(),
+            certainty: Certainty::known(source.certainty.into()),
         })
     }
 }
@@ -228,7 +228,7 @@ impl VersionProjection<v020::Entry, Entry> for V020ToV030 {
             topics: Topics::single(source.topic.into_current()),
             kind: source.kind.into(),
             description: source.description.into_current(),
-            certainty: source.certainty,
+            certainty: Certainty::known(source.certainty),
         })
     }
 }
