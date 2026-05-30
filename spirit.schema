@@ -45,13 +45,16 @@
   RecordIdentifierRange [RecordIdentifier RecordIdentifier]
   RecordIdentifierSelection ((Exact RecordIdentifier) (Range RecordIdentifierRange))
   RecordIdentifierQuery [RecordIdentifierSelection Mode]
+  RecordedTime [Date Time]
+  RecordedTimeRange [RecordedTime RecordedTime]
+  RecordedTimeSelection (Any (Between RecordedTimeRange) (Since RecordedTime) (Until RecordedTime) Recent)
   StateSubscriptionToken [u64]
   RecordSubscriptionToken [u64]
 
   Entry [Topics Kind Description Certainty]
   CertaintyChange [RecordIdentifier Certainty]
   Statement [StatementText]
-  RecordQuery [TopicSelection (Option Kind) CertaintySelection Mode]
+  RecordQuery [TopicSelection (Option Kind) CertaintySelection RecordedTimeSelection Mode]
   RecordObservation [RecordQuery]
   RecordSubscription [(Option Topic) Mode]
   RecordSummary [RecordIdentifier Topics Kind Description Certainty]

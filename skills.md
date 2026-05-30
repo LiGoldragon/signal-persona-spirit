@@ -53,6 +53,10 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 - Intent observations can filter required `Magnitude` certainty with
   `Any`, `Exact`, `AtMost`, or `AtLeast`. Removal-candidate review is
   the exact `Zero` query.
+- Intent observations can filter daemon-stamped capture time with
+  `RecordedTimeSelection`: `Any`, `Between`, `Since`, `Until`, or
+  `Recent`. `Recent` is interpreted by the daemon after the topic,
+  kind, and certainty filters have already narrowed the candidate set.
 - Intent observations can select records by exact `RecordIdentifier`
   or an inclusive `RecordIdentifierRange` through
   `Observation::RecordIdentifiers`.

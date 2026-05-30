@@ -76,6 +76,14 @@ uses exact `Zero` certainty. The ordinary maintenance operation
 `ChangeCertainty` changes an existing record's certainty, including
 lowering it to `Zero` for review without deleting it.
 
+Record observation can also filter by daemon-stamped capture time:
+any time, inclusive time range, since a recorded moment, until a
+recorded moment, or `Recent`. `Recent` is deliberately query-local:
+the daemon applies topic/kind/certainty filters first, then keeps the
+newest matching records, so a quiet topic naturally reaches farther
+back than a busy topic without introducing a premature scoring
+language.
+
 ## Goals
 
 - Carry the **ordinary peer-callable contract** for psyche-state

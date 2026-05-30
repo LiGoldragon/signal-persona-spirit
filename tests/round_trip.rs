@@ -10,11 +10,11 @@ use signal_persona_spirit::{
     Presence, PresenceView, QuestionIdentifier, QuestionSummary, QuestionText, QuestionsObserved,
     RecordAccepted, RecordCaptured, RecordIdentifier, RecordIdentifierQuery, RecordIdentifierRange,
     RecordIdentifierSelection, RecordProvenance, RecordProvenancesObserved, RecordQuery,
-    RecordRemoved, RecordSubscription, RecordSubscriptionToken, RecordsObserved, Reply,
-    RequestUnimplemented, StateChanged, StateObserved, StateSubscriptionToken, Statement,
-    StatementText, Subscription, SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot,
-    SubscriptionToken, Time, Topic, TopicCount, TopicSelection, Topics, TopicsObserved,
-    UnimplementedReason,
+    RecordRemoved, RecordSubscription, RecordSubscriptionToken, RecordedTime, RecordedTimeRange,
+    RecordedTimeSelection, RecordsObserved, Reply, RequestUnimplemented, StateChanged,
+    StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
+    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time,
+    Topic, TopicCount, TopicSelection, Topics, TopicsObserved, UnimplementedReason,
 };
 use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
@@ -133,6 +133,7 @@ fn spirit_requests_round_trip() {
             topic_selection: TopicSelection::any(),
             kind: None,
             certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::Any,
             mode: ObservationMode::SummaryOnly,
         })),
         Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(
@@ -385,9 +386,20 @@ fn spirit_canonical_examples_round_trip() {
             topic_selection: TopicSelection::any(),
             kind: None,
             certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::Any,
             mode: ObservationMode::SummaryOnly,
         })),
+        "(Observe (Records ((Any []) None Any Any SummaryOnly)))",
+    );
+    decode_only_nota(
         "(Observe (Records ((Any []) None Any SummaryOnly)))",
+        Operation::Observe(Observation::Records(RecordQuery {
+            topic_selection: TopicSelection::any(),
+            kind: None,
+            certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::Any,
+            mode: ObservationMode::SummaryOnly,
+        })),
     );
     decode_only_nota(
         "(Observe (Records ((Any []) None SummaryOnly)))",
@@ -395,6 +407,7 @@ fn spirit_canonical_examples_round_trip() {
             topic_selection: TopicSelection::any(),
             kind: None,
             certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::Any,
             mode: ObservationMode::SummaryOnly,
         })),
     );
@@ -403,9 +416,10 @@ fn spirit_canonical_examples_round_trip() {
             topic_selection: TopicSelection::partial(vec![Topic::new("workspace")]),
             kind: Some(Kind::Decision),
             certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::Any,
             mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records ((Partial [workspace]) (Some Decision) Any SummaryOnly)))",
+        "(Observe (Records ((Partial [workspace]) (Some Decision) Any Any SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
@@ -415,24 +429,49 @@ fn spirit_canonical_examples_round_trip() {
             ]),
             kind: None,
             certainty_selection: CertaintySelection::AtMost(Magnitude::Low),
+            recorded_time_selection: RecordedTimeSelection::Any,
             mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records ((Partial [spirit nota]) None (AtMost Low) SummaryOnly)))",
+        "(Observe (Records ((Partial [spirit nota]) None (AtMost Low) Any SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery {
             topic_selection: TopicSelection::full(vec![Topic::new("spirit"), Topic::new("nota")]),
             kind: None,
             certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::Any,
             mode: ObservationMode::SummaryOnly,
         })),
-        "(Observe (Records ((Full [spirit nota]) None Any SummaryOnly)))",
+        "(Observe (Records ((Full [spirit nota]) None Any Any SummaryOnly)))",
+    );
+    round_trip_nota(
+        Operation::Observe(Observation::Records(RecordQuery {
+            topic_selection: TopicSelection::partial(vec![Topic::new("spirit")]),
+            kind: None,
+            certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::Between(RecordedTimeRange::new(
+                RecordedTime::new(Date::new(2026, 5, 29), Time::new(0, 0, 0)),
+                RecordedTime::new(Date::new(2026, 5, 30), Time::new(23, 59, 59)),
+            )),
+            mode: ObservationMode::WithProvenance,
+        })),
+        "(Observe (Records ((Partial [spirit]) None Any (Between ((2026-05-29 00:00:00) (2026-05-30 23:59:59))) WithProvenance)))",
+    );
+    round_trip_nota(
+        Operation::Observe(Observation::Records(RecordQuery {
+            topic_selection: TopicSelection::partial(vec![Topic::new("spirit")]),
+            kind: None,
+            certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::Recent,
+            mode: ObservationMode::SummaryOnly,
+        })),
+        "(Observe (Records ((Partial [spirit]) None Any Recent SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery::removal_candidates(
             ObservationMode::WithProvenance,
         ))),
-        "(Observe (Records ((Any []) None (Exact Zero) WithProvenance)))",
+        "(Observe (Records ((Any []) None (Exact Zero) Any WithProvenance)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(

@@ -151,7 +151,19 @@ impl Description {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+)]
 pub struct Date {
     pub year: u16,
     pub month: u8,
@@ -177,7 +189,19 @@ impl NotaDecode for Date {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+)]
 pub struct Time {
     pub hour: u8,
     pub minute: u8,
@@ -208,6 +232,49 @@ impl NotaDecode for Time {
             minute,
             second,
         })
+    }
+}
+
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaRecord,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+)]
+pub struct RecordedTime {
+    pub date: Date,
+    pub time: Time,
+}
+
+impl RecordedTime {
+    pub const fn new(date: Date, time: Time) -> Self {
+        Self { date, time }
+    }
+}
+
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq, Hash,
+)]
+pub struct RecordedTimeRange {
+    pub first: RecordedTime,
+    pub last: RecordedTime,
+}
+
+impl RecordedTimeRange {
+    pub const fn new(first: RecordedTime, last: RecordedTime) -> Self {
+        Self { first, last }
+    }
+
+    pub fn contains(self, recorded_time: RecordedTime) -> bool {
+        recorded_time >= self.first && recorded_time <= self.last
     }
 }
 
@@ -432,11 +499,40 @@ impl CertaintySelection {
     }
 }
 
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecordedTimeSelection {
+    Any,
+    Between(RecordedTimeRange),
+    Since(RecordedTime),
+    Until(RecordedTime),
+    Recent,
+}
+
+impl RecordedTimeSelection {
+    pub const fn any() -> Self {
+        Self::Any
+    }
+
+    pub const fn recent() -> Self {
+        Self::Recent
+    }
+
+    pub fn matches(self, recorded_time: RecordedTime) -> bool {
+        match self {
+            Self::Any | Self::Recent => true,
+            Self::Between(range) => range.contains(recorded_time),
+            Self::Since(first) => recorded_time >= first,
+            Self::Until(last) => recorded_time <= last,
+        }
+    }
+}
+
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
 pub struct RecordQuery {
     pub topic_selection: TopicSelection,
     pub kind: Option<Kind>,
     pub certainty_selection: CertaintySelection,
+    pub recorded_time_selection: RecordedTimeSelection,
     pub mode: ObservationMode,
 }
 
@@ -446,6 +542,7 @@ impl RecordQuery {
             topic_selection: TopicSelection::any(),
             kind: None,
             certainty_selection: CertaintySelection::removal_candidates(),
+            recorded_time_selection: RecordedTimeSelection::Any,
             mode,
         }
     }
@@ -457,6 +554,7 @@ impl NotaEncode for RecordQuery {
         self.topic_selection.encode(encoder)?;
         self.kind.encode(encoder)?;
         self.certainty_selection.encode(encoder)?;
+        self.recorded_time_selection.encode(encoder)?;
         self.mode.encode(encoder)?;
         encoder.end_record()
     }
@@ -464,28 +562,50 @@ impl NotaEncode for RecordQuery {
 
 impl NotaDecode for RecordQuery {
     fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        decoder.expect_positional_record_start("RecordQuery", 4)?;
+        decoder.expect_positional_record_start("RecordQuery", 5)?;
         let topic_selection = TopicSelection::decode(decoder)?;
         let kind = Option::<Kind>::decode(decoder)?;
         let next = decoder.peek_token()?;
-        let (certainty_selection, mode) = match next {
+        let (certainty_selection, recorded_time_selection, mode) = match next {
             Some(Token::Ident(name))
                 if name == "SummaryOnly"
                     || name == "WithProvenance"
                     || name == "DescriptionOnly" =>
             {
-                (CertaintySelection::Any, ObservationMode::decode(decoder)?)
+                (
+                    CertaintySelection::Any,
+                    RecordedTimeSelection::Any,
+                    ObservationMode::decode(decoder)?,
+                )
             }
-            _ => (
-                CertaintySelection::decode(decoder)?,
-                ObservationMode::decode(decoder)?,
-            ),
+            _ => {
+                let certainty_selection = CertaintySelection::decode(decoder)?;
+                let next = decoder.peek_token()?;
+                let (recorded_time_selection, mode) = match next {
+                    Some(Token::Ident(name))
+                        if name == "SummaryOnly"
+                            || name == "WithProvenance"
+                            || name == "DescriptionOnly" =>
+                    {
+                        (
+                            RecordedTimeSelection::Any,
+                            ObservationMode::decode(decoder)?,
+                        )
+                    }
+                    _ => (
+                        RecordedTimeSelection::decode(decoder)?,
+                        ObservationMode::decode(decoder)?,
+                    ),
+                };
+                (certainty_selection, recorded_time_selection, mode)
+            }
         };
         decoder.expect_record_end()?;
         Ok(Self {
             topic_selection,
             kind,
             certainty_selection,
+            recorded_time_selection,
             mode,
         })
     }
