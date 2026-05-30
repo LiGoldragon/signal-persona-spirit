@@ -4,11 +4,11 @@ use signal_frame::{
     SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    CertaintySelection, Date, Description, EffectEmitted, Entry, Event, FocusArea, Frame,
-    FrameBody, Kind, Observation, ObservationMode, ObserverFilter, ObserverFilterMatch,
-    ObserverSubscriptionToken, Operation, OperationKind, OperationReceived, Presence, PresenceView,
-    QuestionIdentifier, QuestionSummary, QuestionText, QuestionsObserved, RecordAccepted,
-    RecordCaptured, RecordIdentifier, RecordIdentifierQuery, RecordIdentifierRange,
+    CertaintyChange, CertaintyChanged, CertaintySelection, Date, Description, EffectEmitted, Entry,
+    Event, FocusArea, Frame, FrameBody, Kind, Observation, ObservationMode, ObserverFilter,
+    ObserverFilterMatch, ObserverSubscriptionToken, Operation, OperationKind, OperationReceived,
+    Presence, PresenceView, QuestionIdentifier, QuestionSummary, QuestionText, QuestionsObserved,
+    RecordAccepted, RecordCaptured, RecordIdentifier, RecordIdentifierQuery, RecordIdentifierRange,
     RecordIdentifierSelection, RecordProvenance, RecordProvenancesObserved, RecordQuery,
     RecordRemoved, RecordSubscription, RecordSubscriptionToken, RecordsObserved, Reply,
     RequestUnimplemented, StateChanged, StateObserved, StateSubscriptionToken, Statement,
@@ -153,6 +153,10 @@ fn spirit_requests_round_trip() {
             identifier: 2,
         })),
         Operation::Remove(RecordIdentifier::new(1)),
+        Operation::ChangeCertainty(CertaintyChange {
+            identifier: RecordIdentifier::new(1),
+            certainty: Magnitude::Zero,
+        }),
         Operation::Tap(ObserverFilter::OperationsOnly),
         Operation::Untap(ObserverSubscriptionToken::new(SubscriptionTokenInner::new(
             3,
@@ -169,6 +173,10 @@ fn spirit_replies_round_trip() {
     let replies = [
         Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1))),
         Reply::RecordRemoved(RecordRemoved::new(RecordIdentifier::new(1))),
+        Reply::CertaintyChanged(CertaintyChanged {
+            identifier: RecordIdentifier::new(1),
+            certainty: Magnitude::Zero,
+        }),
         Reply::StateObserved(StateObserved::new(state())),
         Reply::RecordsObserved(RecordsObserved::new(vec![description()])),
         Reply::RecordProvenancesObserved(RecordProvenancesObserved::new(vec![provenance()])),
@@ -275,6 +283,14 @@ fn spirit_request_exposes_contract_owned_kind() {
     assert_eq!(
         Operation::Remove(RecordIdentifier::new(1)).kind(),
         OperationKind::Remove
+    );
+    assert_eq!(
+        Operation::ChangeCertainty(CertaintyChange {
+            identifier: RecordIdentifier::new(1),
+            certainty: Magnitude::Zero,
+        })
+        .kind(),
+        OperationKind::ChangeCertainty
     );
     assert_eq!(
         Operation::Watch(Subscription::Records(RecordSubscription {
@@ -456,12 +472,26 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(Operation::Remove(RecordIdentifier::new(1)), "(Remove 1)");
     round_trip_nota(
+        Operation::ChangeCertainty(CertaintyChange {
+            identifier: RecordIdentifier::new(1),
+            certainty: Magnitude::Zero,
+        }),
+        "(ChangeCertainty (1 Zero))",
+    );
+    round_trip_nota(
         Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1))),
         "(RecordAccepted 1)",
     );
     round_trip_nota(
         Reply::RecordRemoved(RecordRemoved::new(RecordIdentifier::new(1))),
         "(RecordRemoved 1)",
+    );
+    round_trip_nota(
+        Reply::CertaintyChanged(CertaintyChanged {
+            identifier: RecordIdentifier::new(1),
+            certainty: Magnitude::Zero,
+        }),
+        "(CertaintyChanged (1 Zero))",
     );
     round_trip_nota(
         Reply::StateObserved(StateObserved::new(state())),

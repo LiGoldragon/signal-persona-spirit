@@ -34,6 +34,8 @@ The ordinary contract uses contract-local verbs:
   which stream class to open).
 - `Remove` (intent-store maintenance — payload is the `RecordIdentifier`
   to delete from the daemon-owned store).
+- `ChangeCertainty` (intent-store maintenance — payload is a
+  `CertaintyChange` naming the record and replacement certainty).
 
 Apply the verb-form rule per `intent/naming.nota` 19:45Z:
 `State` not `Statement`, `Record` not `Entry`-as-a-verb, `Observe` not
@@ -94,6 +96,7 @@ Sema observations rather than executable effect records.
 | `Watch` (domain records stream) | `RecordsSubscription` | `Subscribe` |
 | `Unwatch` (domain records stream) | `RecordsSubscriptionToken` | `Retract` |
 | `Remove` | `RecordIdentifier` | `Retract` |
+| `ChangeCertainty` | `CertaintyChange` | `Mutate` |
 | `Tap` (mandatory observability) | `ObserverFilter` | `Subscribe` |
 | `Untap` (mandatory observability) | `ObserverSubscriptionToken` | `Retract` |
 
@@ -110,6 +113,7 @@ label is computed at observation publish time inside the daemon.
 | Intent queries return compact summaries unless provenance is requested. | `ObservationMode::SummaryOnly` is the explicit query mode used in canonical examples. |
 | Intent record queries support the agent-useful filters needed for intent work. | `RecordQuery` carries `TopicSelection` (`Any`, `Partial`, `Full`), optional `kind`, `CertaintySelection` (`Any`, `Exact`, `AtMost`, `AtLeast`), and description/provenance mode; partial topic filtering matches one or more requested topic memberships, full filtering requires every requested topic, and removal-candidate review is the exact-`Zero` certainty query. `RecordIdentifierQuery` carries exact or inclusive range selection by `RecordIdentifier`. |
 | Intent entries can be removed explicitly by identifier. | `Remove(RecordIdentifier)` round-trips through RKYV and NOTA and returns `RecordRemoved`. |
+| Intent entries can be nominated for removal without deletion. | `ChangeCertainty(CertaintyChange)` round-trips through RKYV and NOTA and returns `CertaintyChanged`; setting certainty to `Zero` makes the record visible to removal-candidate review. |
 | Agents can inspect the intent-topic catalog without reading every entry. | `Observation::Topics` returns `TopicsObserved` with one `TopicCount` per topic membership. |
 | Every submitted entry is one top-level psyche statement without client-provided capture time. | `Entry` carries one or more topics, kind, description, and required `Magnitude` certainty; repeated entries are the restatement signal. |
 | Spirit never accepts client-provided timestamps on `Record` requests. | `record_request_with_client_timestamp_shape_is_rejected` and `record_request_with_parenthesized_client_date_time_shape_is_rejected` fail old timestamp-bearing input shapes. |

@@ -3,9 +3,10 @@ use signal_frame::{
     short_header_from_length_prefixed,
 };
 use signal_persona_spirit::{
-    CertaintySelection, Description, Entry, Frame, FrameBody, Kind, Observation, ObservationMode,
-    Operation, OperationKind, RecordIdentifier, RecordQuery, Reply, RequestUnimplemented,
-    Statement, StatementText, Topic, TopicSelection, Topics, UnimplementedReason,
+    CertaintyChange, CertaintySelection, Description, Entry, Frame, FrameBody, Kind, Observation,
+    ObservationMode, Operation, OperationKind, RecordIdentifier, RecordQuery, Reply,
+    RequestUnimplemented, Statement, StatementText, Topic, TopicSelection, Topics,
+    UnimplementedReason,
 };
 use signal_sema::Magnitude;
 
@@ -56,6 +57,14 @@ impl signal_persona_spirit::OperationHandler for DispatchWitness {
 
     async fn handle_remove(&mut self, _payload: RecordIdentifier) -> Result<Reply, Self::Error> {
         self.handled.push(OperationKind::Remove);
+        Ok(unimplemented_reply())
+    }
+
+    async fn handle_change_certainty(
+        &mut self,
+        _payload: CertaintyChange,
+    ) -> Result<Reply, Self::Error> {
+        self.handled.push(OperationKind::ChangeCertainty);
         Ok(unimplemented_reply())
     }
 

@@ -10,6 +10,7 @@
   (Watch (Subscription))
   (Unwatch (SubscriptionToken))
   (Remove (RecordIdentifier))
+  (ChangeCertainty (CertaintyChange))
 ]
 
 []
@@ -23,6 +24,7 @@
   Watch ((Subscription))
   Unwatch ((SubscriptionToken))
   Remove ((RecordIdentifier))
+  ChangeCertainty ((CertaintyChange))
 
   Kind (Decision Principle Correction Clarification Constraint)
   ObservationMode (SummaryOnly WithProvenance)
@@ -47,6 +49,7 @@
   RecordSubscriptionToken [u64]
 
   Entry [Topics Kind Description Certainty]
+  CertaintyChange [RecordIdentifier Certainty]
   Statement [StatementText]
   RecordQuery [TopicSelection (Option Kind) CertaintySelection Mode]
   RecordObservation [RecordQuery]
@@ -58,6 +61,7 @@
   QuestionSummary [QuestionIdentifier QuestionText]
   RecordAccepted [RecordIdentifier]
   RecordRemoved [RecordIdentifier]
+  CertaintyChanged [RecordIdentifier Certainty]
   StateObserved [PresenceView]
   RecordsObserved [(Vec RecordSummary)]
   RecordProvenancesObserved [(Vec RecordProvenance)]
@@ -77,7 +81,7 @@
   Observation (State (Records RecordQuery) (RecordIdentifiers RecordIdentifierQuery) Topics Questions)
   Subscription (State (Records RecordSubscription))
   SubscriptionToken ((State StateSubscriptionToken) (Records RecordSubscriptionToken))
-  OperationKind (State Record Observe Watch Unwatch Remove Tap Untap)
+  OperationKind (State Record Observe Watch Unwatch Remove ChangeCertainty Tap Untap)
   OperationReceived [OperationKind]
   EffectEmitted [SemaObservation]
 }
@@ -93,7 +97,8 @@
     QuestionsObserved
     SubscriptionOpened
     SubscriptionRetracted
-    RequestUnimplemented)
+    RequestUnimplemented
+    CertaintyChanged)
 
   (Event (belongs DomainStream)
     StateChanged

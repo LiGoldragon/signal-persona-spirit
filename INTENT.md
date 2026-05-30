@@ -72,7 +72,9 @@ matching, or full every-topic matching. Certainty is the shared
 for removal in Spirit, while `Minimum` remains weak but real intent.
 Observation filters can select no certainty filter, exact certainty,
 at-most certainty, or at-least certainty. Removal candidate review
-uses exact `Zero` certainty.
+uses exact `Zero` certainty. The ordinary maintenance operation
+`ChangeCertainty` changes an existing record's certainty, including
+lowering it to `Zero` for review without deleting it.
 
 ## Goals
 

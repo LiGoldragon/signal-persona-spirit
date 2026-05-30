@@ -301,6 +301,14 @@ pub struct Entry {
 }
 
 #[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq,
+)]
+pub struct CertaintyChange {
+    pub identifier: RecordIdentifier,
+    pub certainty: Certainty,
+}
+
+#[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
 )]
 pub enum MatchKind {
@@ -644,6 +652,14 @@ impl RecordRemoved {
     pub const fn identifier(self) -> RecordIdentifier {
         self.0
     }
+}
+
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq,
+)]
+pub struct CertaintyChanged {
+    pub identifier: RecordIdentifier,
+    pub certainty: Certainty,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
