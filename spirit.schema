@@ -47,7 +47,7 @@
   RecordIdentifierQuery [RecordIdentifierSelection Mode]
   RecordedTime [Date Time]
   RecordedTimeRange [RecordedTime RecordedTime]
-  RecordedTimeSelection (Any (Between RecordedTimeRange) (Since RecordedTime) (Until RecordedTime) Recent)
+  RecordedTimeSelection (Any (Between RecordedTimeRange) (Since RecordedTime) (Until RecordedTime) Recent Shallow Deep VeryDeep)
   StateSubscriptionToken [u64]
   RecordSubscriptionToken [u64]
 

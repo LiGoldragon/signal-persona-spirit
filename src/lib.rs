@@ -506,6 +506,9 @@ pub enum RecordedTimeSelection {
     Since(RecordedTime),
     Until(RecordedTime),
     Recent,
+    Shallow,
+    Deep,
+    VeryDeep,
 }
 
 impl RecordedTimeSelection {
@@ -519,7 +522,7 @@ impl RecordedTimeSelection {
 
     pub fn matches(self, recorded_time: RecordedTime) -> bool {
         match self {
-            Self::Any | Self::Recent => true,
+            Self::Any | Self::Recent | Self::Shallow | Self::Deep | Self::VeryDeep => true,
             Self::Between(range) => range.contains(recorded_time),
             Self::Since(first) => recorded_time >= first,
             Self::Until(last) => recorded_time <= last,

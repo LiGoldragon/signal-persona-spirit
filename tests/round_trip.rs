@@ -468,6 +468,36 @@ fn spirit_canonical_examples_round_trip() {
         "(Observe (Records ((Partial [spirit]) None Any Recent SummaryOnly)))",
     );
     round_trip_nota(
+        Operation::Observe(Observation::Records(RecordQuery {
+            topic_selection: TopicSelection::partial(vec![Topic::new("spirit")]),
+            kind: None,
+            certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::Shallow,
+            mode: ObservationMode::SummaryOnly,
+        })),
+        "(Observe (Records ((Partial [spirit]) None Any Shallow SummaryOnly)))",
+    );
+    round_trip_nota(
+        Operation::Observe(Observation::Records(RecordQuery {
+            topic_selection: TopicSelection::partial(vec![Topic::new("spirit")]),
+            kind: None,
+            certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::Deep,
+            mode: ObservationMode::SummaryOnly,
+        })),
+        "(Observe (Records ((Partial [spirit]) None Any Deep SummaryOnly)))",
+    );
+    round_trip_nota(
+        Operation::Observe(Observation::Records(RecordQuery {
+            topic_selection: TopicSelection::partial(vec![Topic::new("spirit")]),
+            kind: None,
+            certainty_selection: CertaintySelection::Any,
+            recorded_time_selection: RecordedTimeSelection::VeryDeep,
+            mode: ObservationMode::SummaryOnly,
+        })),
+        "(Observe (Records ((Partial [spirit]) None Any VeryDeep SummaryOnly)))",
+    );
+    round_trip_nota(
         Operation::Observe(Observation::Records(RecordQuery::removal_candidates(
             ObservationMode::WithProvenance,
         ))),
