@@ -4,9 +4,9 @@ use signal_frame::{
 };
 use signal_persona_spirit::{
     CertaintyChange, CertaintySelection, Description, Entry, Frame, FrameBody, Kind, Observation,
-    ObservationMode, Operation, OperationKind, RecordIdentifier, RecordQuery,
-    PrivacySelection, RecordedTimeSelection, Reply, RequestUnimplemented, Statement,
-    StatementText, Topic, TopicSelection, Topics, UnimplementedReason,
+    ObservationMode, Operation, OperationKind, PrivacySelection, RecordIdentifier, RecordQuery,
+    RecordedTimeSelection, Reply, RequestUnimplemented, Statement, StatementText, Topic,
+    TopicSelection, Topics, UnimplementedReason,
 };
 use signal_sema::Magnitude;
 

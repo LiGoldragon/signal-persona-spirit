@@ -4,8 +4,8 @@ use signal_frame::{
     SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    CertaintyChange, CertaintyChanged, CertaintySelection, Date, Description, EffectEmitted,
-    Entry, Event, FocusArea, Frame, FrameBody, Kind, Observation, ObservationMode, ObserverFilter,
+    CertaintyChange, CertaintyChanged, CertaintySelection, Date, Description, EffectEmitted, Entry,
+    Event, FocusArea, Frame, FrameBody, Kind, Observation, ObservationMode, ObserverFilter,
     ObserverFilterMatch, ObserverSubscriptionToken, Operation, OperationKind, OperationReceived,
     Presence, PresenceView, PrivacySelection, QuestionIdentifier, QuestionSummary, QuestionText,
     QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier, RecordIdentifierQuery,
