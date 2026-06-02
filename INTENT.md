@@ -70,8 +70,13 @@ topic vector, either as no topic filter, partial one-or-more topic
 matching, or full every-topic matching. Certainty is the shared
 `Magnitude` scale: `Zero` means confidence withdrawn and nominated
 for removal in Spirit, while `Minimum` remains weak but real intent.
-Observation filters can select no certainty filter, exact certainty,
-at-most certainty, or at-least certainty. Removal candidate review
+Privacy is a second directional `Magnitude` axis, not a named tier
+enum: `Zero` means open/public intent, and higher magnitudes narrow
+the intended audience. Observation filters can select no certainty
+filter, exact certainty, at-most certainty, or at-least certainty;
+the same selector shape applies to privacy. Default record
+observation selects exact `Zero` privacy so elevated records are not
+returned unless the caller asks for them. Removal candidate review
 uses exact `Zero` certainty. The ordinary maintenance operation
 `ChangeCertainty` changes an existing record's certainty, including
 lowering it to `Zero` for review without deleting it.

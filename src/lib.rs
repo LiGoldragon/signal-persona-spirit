@@ -358,13 +358,67 @@ pub struct Statement {
 }
 
 pub type Certainty = Magnitude;
+pub type Privacy = Magnitude;
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Entry {
     pub topics: Topics,
     pub kind: Kind,
     pub description: Description,
     pub certainty: Certainty,
+    pub privacy: Privacy,
+}
+
+impl Entry {
+    pub fn open(
+        topics: Topics,
+        kind: Kind,
+        description: Description,
+        certainty: Certainty,
+    ) -> Self {
+        Self {
+            topics,
+            kind,
+            description,
+            certainty,
+            privacy: Magnitude::Zero,
+        }
+    }
+}
+
+impl NotaEncode for Entry {
+    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
+        encoder.start_record_untagged()?;
+        self.topics.encode(encoder)?;
+        self.kind.encode(encoder)?;
+        self.description.encode(encoder)?;
+        self.certainty.encode(encoder)?;
+        self.privacy.encode(encoder)?;
+        encoder.end_record()
+    }
+}
+
+impl NotaDecode for Entry {
+    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
+        decoder.expect_positional_record_start("Entry", 5)?;
+        let topics = Topics::decode(decoder)?;
+        let kind = Kind::decode(decoder)?;
+        let description = Description::decode(decoder)?;
+        let certainty = Certainty::decode(decoder)?;
+        let privacy = if decoder.peek_is_record_end()? {
+            Magnitude::Zero
+        } else {
+            Magnitude::decode(decoder)?
+        };
+        decoder.expect_record_end()?;
+        Ok(Self {
+            topics,
+            kind,
+            description,
+            certainty,
+            privacy,
+        })
+    }
 }
 
 #[derive(
@@ -499,6 +553,31 @@ impl CertaintySelection {
     }
 }
 
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+)]
+pub enum PrivacySelection {
+    Any,
+    Exact(Privacy),
+    AtMost(Privacy),
+    AtLeast(Privacy),
+}
+
+impl PrivacySelection {
+    pub const fn default_observation_privacy() -> Self {
+        Self::Exact(Magnitude::Zero)
+    }
+
+    pub fn matches(self, privacy: Privacy) -> bool {
+        match self {
+            Self::Any => true,
+            Self::Exact(expected) => privacy == expected,
+            Self::AtMost(maximum) => privacy <= maximum,
+            Self::AtLeast(minimum) => privacy >= minimum,
+        }
+    }
+}
+
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecordedTimeSelection {
     Any,
@@ -536,6 +615,7 @@ pub struct RecordQuery {
     pub kind: Option<Kind>,
     pub certainty_selection: CertaintySelection,
     pub recorded_time_selection: RecordedTimeSelection,
+    pub privacy_selection: PrivacySelection,
     pub mode: ObservationMode,
 }
 
@@ -546,6 +626,7 @@ impl RecordQuery {
             kind: None,
             certainty_selection: CertaintySelection::removal_candidates(),
             recorded_time_selection: RecordedTimeSelection::Any,
+            privacy_selection: PrivacySelection::default_observation_privacy(),
             mode,
         }
     }
@@ -558,6 +639,7 @@ impl NotaEncode for RecordQuery {
         self.kind.encode(encoder)?;
         self.certainty_selection.encode(encoder)?;
         self.recorded_time_selection.encode(encoder)?;
+        self.privacy_selection.encode(encoder)?;
         self.mode.encode(encoder)?;
         encoder.end_record()
     }
@@ -565,11 +647,11 @@ impl NotaEncode for RecordQuery {
 
 impl NotaDecode for RecordQuery {
     fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        decoder.expect_positional_record_start("RecordQuery", 5)?;
+        decoder.expect_positional_record_start("RecordQuery", 6)?;
         let topic_selection = TopicSelection::decode(decoder)?;
         let kind = Option::<Kind>::decode(decoder)?;
         let next = decoder.peek_token()?;
-        let (certainty_selection, recorded_time_selection, mode) = match next {
+        let (certainty_selection, recorded_time_selection, privacy_selection, mode) = match next {
             Some(Token::Ident(name))
                 if name == "SummaryOnly"
                     || name == "WithProvenance"
@@ -578,13 +660,14 @@ impl NotaDecode for RecordQuery {
                 (
                     CertaintySelection::Any,
                     RecordedTimeSelection::Any,
+                    PrivacySelection::default_observation_privacy(),
                     ObservationMode::decode(decoder)?,
                 )
             }
             _ => {
                 let certainty_selection = CertaintySelection::decode(decoder)?;
                 let next = decoder.peek_token()?;
-                let (recorded_time_selection, mode) = match next {
+                let (recorded_time_selection, privacy_selection, mode) = match next {
                     Some(Token::Ident(name))
                         if name == "SummaryOnly"
                             || name == "WithProvenance"
@@ -592,15 +675,38 @@ impl NotaDecode for RecordQuery {
                     {
                         (
                             RecordedTimeSelection::Any,
+                            PrivacySelection::default_observation_privacy(),
                             ObservationMode::decode(decoder)?,
                         )
                     }
-                    _ => (
-                        RecordedTimeSelection::decode(decoder)?,
-                        ObservationMode::decode(decoder)?,
-                    ),
+                    _ => {
+                        let recorded_time_selection = RecordedTimeSelection::decode(decoder)?;
+                        let next = decoder.peek_token()?;
+                        let (privacy_selection, mode) = match next {
+                            Some(Token::Ident(name))
+                                if name == "SummaryOnly"
+                                    || name == "WithProvenance"
+                                    || name == "DescriptionOnly" =>
+                            {
+                                (
+                                    PrivacySelection::default_observation_privacy(),
+                                    ObservationMode::decode(decoder)?,
+                                )
+                            }
+                            _ => (
+                                PrivacySelection::decode(decoder)?,
+                                ObservationMode::decode(decoder)?,
+                            ),
+                        };
+                        (recorded_time_selection, privacy_selection, mode)
+                    }
                 };
-                (certainty_selection, recorded_time_selection, mode)
+                (
+                    certainty_selection,
+                    recorded_time_selection,
+                    privacy_selection,
+                    mode,
+                )
             }
         };
         decoder.expect_record_end()?;
@@ -609,6 +715,7 @@ impl NotaDecode for RecordQuery {
             kind,
             certainty_selection,
             recorded_time_selection,
+            privacy_selection,
             mode,
         })
     }
@@ -690,6 +797,7 @@ pub struct RecordSummary {
     pub kind: Kind,
     pub description: Description,
     pub certainty: Certainty,
+    pub privacy: Privacy,
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]

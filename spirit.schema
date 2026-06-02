@@ -27,8 +27,9 @@
   ChangeCertainty ((CertaintyChange))
 
   Kind (Decision Principle Correction Clarification Constraint)
-  ObservationMode (SummaryOnly WithProvenance)
+  ObservationMode (SummaryOnly DescriptionOnly WithProvenance)
   Certainty Magnitude
+  Privacy Magnitude
   Mode ObservationMode
 
   Topic [String]
@@ -36,6 +37,7 @@
   MatchKind (Any Partial Full)
   TopicSelection [MatchKind (Vec Topic)]
   CertaintySelection (Any (Exact Certainty) (AtMost Certainty) (AtLeast Certainty))
+  PrivacySelection (Any (Exact Privacy) (AtMost Privacy) (AtLeast Privacy))
   Description [String]
   StatementText [String]
   FocusArea [String]
@@ -51,13 +53,13 @@
   StateSubscriptionToken [u64]
   RecordSubscriptionToken [u64]
 
-  Entry [Topics Kind Description Certainty]
+  Entry [Topics Kind Description Certainty Privacy]
   CertaintyChange [RecordIdentifier Certainty]
   Statement [StatementText]
-  RecordQuery [TopicSelection (Option Kind) CertaintySelection RecordedTimeSelection Mode]
+  RecordQuery [TopicSelection (Option Kind) CertaintySelection RecordedTimeSelection PrivacySelection Mode]
   RecordObservation [RecordQuery]
   RecordSubscription [(Option Topic) Mode]
-  RecordSummary [RecordIdentifier Topics Kind Description Certainty]
+  RecordSummary [RecordIdentifier Topics Kind Description Certainty Privacy]
   RecordProvenance [RecordSummary Date Time]
   TopicCount [Topic u64]
   PresenceView [Presence (Option FocusArea)]

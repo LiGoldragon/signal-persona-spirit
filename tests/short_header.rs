@@ -5,8 +5,8 @@ use signal_frame::{
 use signal_persona_spirit::{
     CertaintyChange, CertaintySelection, Description, Entry, Frame, FrameBody, Kind, Observation,
     ObservationMode, Operation, OperationKind, RecordIdentifier, RecordQuery,
-    RecordedTimeSelection, Reply, RequestUnimplemented, Statement, StatementText, Topic,
-    TopicSelection, Topics, UnimplementedReason,
+    PrivacySelection, RecordedTimeSelection, Reply, RequestUnimplemented, Statement,
+    StatementText, Topic, TopicSelection, Topics, UnimplementedReason,
 };
 use signal_sema::Magnitude;
 
@@ -115,6 +115,7 @@ fn entry() -> Entry {
         kind: Kind::Decision,
         description: Description::new("schema header"),
         certainty: Magnitude::Maximum,
+        privacy: Magnitude::Zero,
     }
 }
 
@@ -130,7 +131,7 @@ fn header(bytes: [u8; 8]) -> ShortHeader {
 
 #[test]
 fn record_request_short_header_is_schema_derived_and_peekable() {
-    let expected = header([1, 0, 6, 0, 0, 0, 0, 0]);
+    let expected = header([1, 0, 6, 7, 0, 0, 0, 0]);
     let frame = Operation::Record(entry()).into_frame(exchange());
 
     assert_eq!(frame.short_header(), expected);
@@ -202,9 +203,10 @@ fn nested_query_shape_sets_sub_enum_slots() {
         kind: None,
         certainty_selection: CertaintySelection::Any,
         recorded_time_selection: RecordedTimeSelection::Any,
+        privacy_selection: PrivacySelection::default_observation_privacy(),
         mode: ObservationMode::WithProvenance,
     }))
     .into_frame(exchange());
 
-    assert_eq!(frame.short_header(), header([2, 1, 0, 0, 0, 0, 1, 0]));
+    assert_eq!(frame.short_header(), header([2, 1, 0, 0, 0, 0, 1, 7]));
 }

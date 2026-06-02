@@ -203,6 +203,7 @@ impl VersionProjection<v010::Entry, Entry> for V010ToV011 {
             kind: source.kind.into(),
             description: source.summary.into_description(),
             certainty: source.certainty.into(),
+            privacy: Magnitude::Zero,
         })
     }
 }
@@ -229,6 +230,7 @@ impl VersionProjection<v020::Entry, Entry> for V020ToV030 {
             kind: source.kind.into(),
             description: source.description.into_current(),
             certainty: source.certainty,
+            privacy: Magnitude::Zero,
         })
     }
 }

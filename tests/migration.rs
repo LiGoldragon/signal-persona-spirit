@@ -37,6 +37,7 @@ fn v010_record_entry_projects_to_current_entry_shape() {
     assert_eq!(current.kind, Kind::Decision);
     assert_eq!(current.description.as_str(), "description");
     assert_eq!(current.certainty, Magnitude::Maximum);
+    assert_eq!(current.privacy, Magnitude::Zero);
 }
 
 #[test]
@@ -53,6 +54,7 @@ fn v010_nota_record_projects_to_current_operation() {
         panic!("expected current Record operation");
     };
     assert_eq!(entry.certainty, Magnitude::Medium);
+    assert_eq!(entry.privacy, Magnitude::Zero);
     assert_eq!(entry.description.as_str(), "description");
     assert_eq!(entry.topics.as_slice()[0].as_str(), "workspace");
 }
@@ -76,4 +78,5 @@ fn v020_record_entry_projects_to_multi_topic_current_entry_shape() {
         "single topic becomes topic vector"
     );
     assert_eq!(current.certainty, Magnitude::High);
+    assert_eq!(current.privacy, Magnitude::Zero);
 }

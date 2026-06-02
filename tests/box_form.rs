@@ -7,6 +7,7 @@ fn entry() -> Entry {
         kind: Kind::Decision,
         description: Description::new("schema box description"),
         certainty: Magnitude::High,
+        privacy: Magnitude::Zero,
     }
 }
 
@@ -16,7 +17,7 @@ fn entry_uses_schema_derived_text_box_form() {
 
     assert_eq!(
         text,
-        "(Entry Decision High) [workspace] [schema box description]"
+        "(Entry Decision High Zero) [workspace] [schema box description]"
     );
 
     let decoded: Entry = nota_box::decode_text(&text).unwrap();
@@ -28,7 +29,7 @@ fn entry_uses_schema_derived_binary_box_form_with_peekable_boxes() {
     let bytes = nota_box::encode_binary(&entry()).unwrap();
     let root_length = nota_box::root_text_length(&bytes).unwrap();
 
-    assert_eq!(root_length, "(Entry Decision High)".len());
+    assert_eq!(root_length, "(Entry Decision High Zero)".len());
     assert_eq!(
         nota_box::peek_box(&bytes, root_length, 1).unwrap(),
         b"[schema box description]"

@@ -34,6 +34,8 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
   Restatement is represented by repeated `Entry` records, not by nesting
   vectors. Certainty is required `Magnitude`: `Zero` nominates a
   record for removal, while `Minimum` remains weak but real intent.
+  Privacy is also required `Magnitude`: `Zero` is open/public, and
+  higher magnitudes narrow the intended audience.
 - Capture time appears only in daemon-produced provenance as a bare
   `YYYY-MM-DD` date field and a bare `HH:MM:SS` time field.
 - `RecordIdentifier` is output-only and minted by `persona-spirit`.
@@ -53,6 +55,9 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 - Intent observations can filter required `Magnitude` certainty with
   `Any`, `Exact`, `AtMost`, or `AtLeast`. Removal-candidate review is
   the exact `Zero` query.
+- Intent observations can filter required `Magnitude` privacy with
+  `Any`, `Exact`, `AtMost`, or `AtLeast`. Default record observation is
+  exact `Zero` privacy; elevated records must be explicitly requested.
 - Intent observations can filter daemon-stamped capture time with
   `RecordedTimeSelection`: `Any`, `Between`, `Since`, `Until`,
   `Recent`, `Shallow`, `Deep`, or `VeryDeep`. The qualitative recency
