@@ -293,6 +293,21 @@ impl FocusArea {
     }
 }
 
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+)]
+pub struct ArchivePath(String);
+
+impl ArchivePath {
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct StateSubscriptionToken {
     pub identifier: u64,
@@ -784,6 +799,54 @@ pub struct RecordObservation {
     pub query: RecordQuery,
 }
 
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+pub enum ArchiveTarget {
+    Inline,
+    File(ArchivePath),
+}
+
+impl ArchiveTarget {
+    pub fn file(path: impl Into<String>) -> Self {
+        Self::File(ArchivePath::new(path))
+    }
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct RemovalCandidateCollection {
+    pub record_query: RecordQuery,
+    pub archive_target: ArchiveTarget,
+}
+
+impl RemovalCandidateCollection {
+    pub fn new(record_query: RecordQuery, archive_target: ArchiveTarget) -> Self {
+        Self {
+            record_query,
+            archive_target,
+        }
+    }
+
+    pub fn inline() -> Self {
+        Self::new(
+            RecordQuery::removal_candidates(ObservationMode::SummaryOnly),
+            ArchiveTarget::Inline,
+        )
+    }
+
+    pub fn file(path: impl Into<String>) -> Self {
+        Self::new(
+            RecordQuery::removal_candidates(ObservationMode::SummaryOnly),
+            ArchiveTarget::file(path),
+        )
+    }
+
+    pub fn is_exact_zero_candidate_query(&self) -> bool {
+        matches!(
+            self.record_query.certainty_selection,
+            CertaintySelection::Exact(Magnitude::Zero)
+        )
+    }
+}
+
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordSubscription {
     pub topic: Option<Topic>,
@@ -805,6 +868,57 @@ pub struct RecordProvenance {
     pub summary: RecordSummary,
     pub date: Date,
     pub time: Time,
+}
+
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+)]
+pub enum RemovalCandidateSkipReason {
+    ArchiveFailed,
+    RecordChanged,
+    RecordAlreadyRemoved,
+    NoLongerCandidate,
+}
+
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq, Hash,
+)]
+pub struct SkippedRemovalCandidate {
+    pub identifier: RecordIdentifier,
+    pub reason: RemovalCandidateSkipReason,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct RemovalCandidatesCollected {
+    pub archived_records: Vec<RecordSummary>,
+    pub removed_identifiers: Vec<RecordIdentifier>,
+    pub skipped_candidates: Vec<SkippedRemovalCandidate>,
+}
+
+impl RemovalCandidatesCollected {
+    pub fn new(
+        archived_records: Vec<RecordSummary>,
+        removed_identifiers: Vec<RecordIdentifier>,
+        skipped_candidates: Vec<SkippedRemovalCandidate>,
+    ) -> Self {
+        Self {
+            archived_records,
+            removed_identifiers,
+            skipped_candidates,
+        }
+    }
+
+    pub fn archived_records(&self) -> &[RecordSummary] {
+        &self.archived_records
+    }
+
+    pub fn removed_identifiers(&self) -> &[RecordIdentifier] {
+        &self.removed_identifiers
+    }
+
+    pub fn skipped_candidates(&self) -> &[SkippedRemovalCandidate] {
+        &self.skipped_candidates
+    }
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]

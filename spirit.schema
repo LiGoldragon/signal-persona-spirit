@@ -11,6 +11,7 @@
   (Unwatch (SubscriptionToken))
   (Remove (RecordIdentifier))
   (ChangeCertainty (CertaintyChange))
+  (CollectRemovalCandidates (RemovalCandidateCollection))
 ]
 
 []
@@ -25,6 +26,7 @@
   Unwatch ((SubscriptionToken))
   Remove ((RecordIdentifier))
   ChangeCertainty ((CertaintyChange))
+  CollectRemovalCandidates ((RemovalCandidateCollection))
 
   Kind (Decision Principle Correction Clarification Constraint)
   ObservationMode (SummaryOnly DescriptionOnly WithProvenance)
@@ -41,6 +43,7 @@
   Description [String]
   StatementText [String]
   FocusArea [String]
+  ArchivePath [String]
   QuestionIdentifier [String]
   QuestionText [String]
   RecordIdentifier [u64]
@@ -58,9 +61,14 @@
   Statement [StatementText]
   RecordQuery [TopicSelection (Option Kind) CertaintySelection RecordedTimeSelection PrivacySelection Mode]
   RecordObservation [RecordQuery]
+  ArchiveTarget (Inline (File ArchivePath))
+  RemovalCandidateCollection [RecordQuery ArchiveTarget]
   RecordSubscription [(Option Topic) Mode]
   RecordSummary [RecordIdentifier Topics Kind Description Certainty Privacy]
   RecordProvenance [RecordSummary Date Time]
+  RemovalCandidateSkipReason (ArchiveFailed RecordChanged RecordAlreadyRemoved NoLongerCandidate)
+  SkippedRemovalCandidate [RecordIdentifier RemovalCandidateSkipReason]
+  RemovalCandidatesCollected [(Vec RecordSummary) (Vec RecordIdentifier) (Vec SkippedRemovalCandidate)]
   TopicCount [Topic u64]
   PresenceView [Presence (Option FocusArea)]
   QuestionSummary [QuestionIdentifier QuestionText]
@@ -86,7 +94,7 @@
   Observation (State (Records RecordQuery) (RecordIdentifiers RecordIdentifierQuery) Topics Questions)
   Subscription (State (Records RecordSubscription))
   SubscriptionToken ((State StateSubscriptionToken) (Records RecordSubscriptionToken))
-  OperationKind (State Record Observe Watch Unwatch Remove ChangeCertainty Tap Untap)
+  OperationKind (State Record Observe Watch Unwatch Remove ChangeCertainty CollectRemovalCandidates Tap Untap)
   OperationReceived [OperationKind]
   EffectEmitted [SemaObservation]
 }
@@ -103,7 +111,8 @@
     SubscriptionOpened
     SubscriptionRetracted
     RequestUnimplemented
-    CertaintyChanged)
+    CertaintyChanged
+    RemovalCandidatesCollected)
 
   (Event (belongs DomainStream)
     StateChanged

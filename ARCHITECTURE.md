@@ -36,6 +36,9 @@ The ordinary contract uses contract-local verbs:
   to delete from the daemon-owned store).
 - `ChangeCertainty` (intent-store maintenance — payload is a
   `CertaintyChange` naming the record and replacement certainty).
+- `CollectRemovalCandidates` (intent-store maintenance — payload is a
+  `RemovalCandidateCollection` that selects exact-`Zero` candidates and
+  names an archive target before daemon-side retraction).
 
 Apply the verb-form rule per `intent/naming.nota` 19:45Z:
 `State` not `Statement`, `Record` not `Entry`-as-a-verb, `Observe` not
@@ -97,6 +100,7 @@ Sema observations rather than executable effect records.
 | `Unwatch` (domain records stream) | `RecordsSubscriptionToken` | `Retract` |
 | `Remove` | `RecordIdentifier` | `Retract` |
 | `ChangeCertainty` | `CertaintyChange` | `Mutate` |
+| `CollectRemovalCandidates` | `RemovalCandidateCollection` | `Retract` |
 | `Tap` (mandatory observability) | `ObserverFilter` | `Subscribe` |
 | `Untap` (mandatory observability) | `ObserverSubscriptionToken` | `Retract` |
 
@@ -114,6 +118,7 @@ label is computed at observation publish time inside the daemon.
 | Intent record queries support the agent-useful filters needed for intent work. | `RecordQuery` carries `TopicSelection` (`Any`, `Partial`, `Full`), optional `kind`, `CertaintySelection` (`Any`, `Exact`, `AtMost`, `AtLeast`), `RecordedTimeSelection` (`Any`, `Between`, `Since`, `Until`, `Recent`, `Shallow`, `Deep`, `VeryDeep`), `PrivacySelection` (`Any`, `Exact`, `AtMost`, `AtLeast`), and description/provenance mode; partial topic filtering matches one or more requested topic memberships, full filtering requires every requested topic, removal-candidate review is the exact-`Zero` certainty query, privacy is a directional `Magnitude` where `Zero` is open/public and higher values narrow the audience, default observation is exact-`Zero` privacy, and qualitative recency depths are query-local after the other filters. `RecordIdentifierQuery` carries exact or inclusive range selection by `RecordIdentifier`. |
 | Intent entries can be removed explicitly by identifier. | `Remove(RecordIdentifier)` round-trips through RKYV and NOTA and returns `RecordRemoved`. |
 | Intent entries can be nominated for removal without deletion. | `ChangeCertainty(CertaintyChange)` round-trips through RKYV and NOTA and returns `CertaintyChanged`; setting certainty to `Zero` makes the record visible to removal-candidate review. |
+| Removal-candidate collection is explicit archive-before-retract maintenance. | `CollectRemovalCandidates(RemovalCandidateCollection)` round-trips through RKYV and NOTA, requires an exact-`Zero` candidate query by contract method, carries `ArchiveTarget::Inline` or `ArchiveTarget::File(ArchivePath)`, and returns `RemovalCandidatesCollected` with compact `RecordSummary` archive material plus removed identifiers and skipped candidates. |
 | Agents can inspect the intent-topic catalog without reading every entry. | `Observation::Topics` returns `TopicsObserved` with one `TopicCount` per topic membership. |
 | Every submitted entry is one top-level psyche statement without client-provided capture time. | `Entry` carries one or more topics, kind, description, required `Magnitude` certainty, and required `Magnitude` privacy; repeated entries are the restatement signal. |
 | Spirit never accepts client-provided timestamps on `Record` requests. | `record_request_with_client_timestamp_shape_is_rejected` and `record_request_with_parenthesized_client_date_time_shape_is_rejected` fail old timestamp-bearing input shapes. |

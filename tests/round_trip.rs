@@ -4,17 +4,19 @@ use signal_frame::{
     SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    CertaintyChange, CertaintyChanged, CertaintySelection, Date, Description, EffectEmitted, Entry,
-    Event, FocusArea, Frame, FrameBody, Kind, Observation, ObservationMode, ObserverFilter,
-    ObserverFilterMatch, ObserverSubscriptionToken, Operation, OperationKind, OperationReceived,
-    Presence, PresenceView, PrivacySelection, QuestionIdentifier, QuestionSummary, QuestionText,
-    QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier, RecordIdentifierQuery,
-    RecordIdentifierRange, RecordIdentifierSelection, RecordProvenance, RecordProvenancesObserved,
-    RecordQuery, RecordRemoved, RecordSubscription, RecordSubscriptionToken, RecordedTime,
-    RecordedTimeRange, RecordedTimeSelection, RecordsObserved, Reply, RequestUnimplemented,
-    StateChanged, StateObserved, StateSubscriptionToken, Statement, StatementText, Subscription,
-    SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time,
-    Topic, TopicCount, TopicSelection, Topics, TopicsObserved, UnimplementedReason,
+    ArchiveTarget, CertaintyChange, CertaintyChanged, CertaintySelection, Date, Description,
+    EffectEmitted, Entry, Event, FocusArea, Frame, FrameBody, Kind, Observation, ObservationMode,
+    ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken, Operation, OperationKind,
+    OperationReceived, Presence, PresenceView, PrivacySelection, QuestionIdentifier,
+    QuestionSummary, QuestionText, QuestionsObserved, RecordAccepted, RecordCaptured,
+    RecordIdentifier, RecordIdentifierQuery, RecordIdentifierRange, RecordIdentifierSelection,
+    RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordRemoved, RecordSubscription,
+    RecordSubscriptionToken, RecordedTime, RecordedTimeRange, RecordedTimeSelection,
+    RecordsObserved, RemovalCandidateCollection, RemovalCandidatesCollected, Reply,
+    RequestUnimplemented, StateChanged, StateObserved, StateSubscriptionToken, Statement,
+    StatementText, Subscription, SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot,
+    SubscriptionToken, Time, Topic, TopicCount, TopicSelection, Topics, TopicsObserved,
+    UnimplementedReason,
 };
 use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
@@ -35,6 +37,17 @@ fn description() -> signal_persona_spirit::RecordSummary {
         kind: Kind::Decision,
         description: Description::new("description only"),
         certainty: Magnitude::Maximum,
+        privacy: Magnitude::Zero,
+    }
+}
+
+fn candidate_description() -> signal_persona_spirit::RecordSummary {
+    signal_persona_spirit::RecordSummary {
+        identifier: RecordIdentifier::new(1),
+        topics: Topics::single(Topic::new("workspace")),
+        kind: Kind::Correction,
+        description: Description::new("candidate description"),
+        certainty: Magnitude::Zero,
         privacy: Magnitude::Zero,
     }
 }
@@ -161,6 +174,7 @@ fn spirit_requests_round_trip() {
             identifier: RecordIdentifier::new(1),
             certainty: Magnitude::Zero,
         }),
+        Operation::CollectRemovalCandidates(RemovalCandidateCollection::inline()),
         Operation::Tap(ObserverFilter::OperationsOnly),
         Operation::Untap(ObserverSubscriptionToken::new(SubscriptionTokenInner::new(
             3,
@@ -181,6 +195,11 @@ fn spirit_replies_round_trip() {
             identifier: RecordIdentifier::new(1),
             certainty: Magnitude::Zero,
         }),
+        Reply::RemovalCandidatesCollected(RemovalCandidatesCollected::new(
+            vec![candidate_description()],
+            vec![RecordIdentifier::new(1)],
+            Vec::new(),
+        )),
         Reply::StateObserved(StateObserved::new(state())),
         Reply::RecordsObserved(RecordsObserved::new(vec![description()])),
         Reply::RecordProvenancesObserved(RecordProvenancesObserved::new(vec![provenance()])),
@@ -295,6 +314,10 @@ fn spirit_request_exposes_contract_owned_kind() {
         })
         .kind(),
         OperationKind::ChangeCertainty
+    );
+    assert_eq!(
+        Operation::CollectRemovalCandidates(RemovalCandidateCollection::inline()).kind(),
+        OperationKind::CollectRemovalCandidates
     );
     assert_eq!(
         Operation::Watch(Subscription::Records(RecordSubscription {
@@ -562,6 +585,17 @@ fn spirit_canonical_examples_round_trip() {
         "(ChangeCertainty (1 Zero))",
     );
     round_trip_nota(
+        Operation::CollectRemovalCandidates(RemovalCandidateCollection::inline()),
+        "(CollectRemovalCandidates (((Any []) None (Exact Zero) Any (Exact Zero) SummaryOnly) Inline))",
+    );
+    round_trip_nota(
+        Operation::CollectRemovalCandidates(RemovalCandidateCollection::new(
+            RecordQuery::removal_candidates(ObservationMode::SummaryOnly),
+            ArchiveTarget::file("/tmp/spirit-removal-candidates.nota"),
+        )),
+        "(CollectRemovalCandidates (((Any []) None (Exact Zero) Any (Exact Zero) SummaryOnly) (File [/tmp/spirit-removal-candidates.nota])))",
+    );
+    round_trip_nota(
         Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1))),
         "(RecordAccepted 1)",
     );
@@ -575,6 +609,14 @@ fn spirit_canonical_examples_round_trip() {
             certainty: Magnitude::Zero,
         }),
         "(CertaintyChanged (1 Zero))",
+    );
+    round_trip_nota(
+        Reply::RemovalCandidatesCollected(RemovalCandidatesCollected::new(
+            vec![candidate_description()],
+            vec![RecordIdentifier::new(1)],
+            Vec::new(),
+        )),
+        "(RemovalCandidatesCollected ([(1 [workspace] Correction [candidate description] Zero Zero)] [1] []))",
     );
     round_trip_nota(
         Reply::StateObserved(StateObserved::new(state())),

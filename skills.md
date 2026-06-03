@@ -42,6 +42,12 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 - `ChangeCertainty(CertaintyChange)` is the ordinary mutate-shaped
   maintenance verb for replacing an existing record's certainty; `Zero`
   is the review-nomination value, not a delete operation by itself.
+- `CollectRemovalCandidates(RemovalCandidateCollection)` is the ordinary
+  archive-before-retract maintenance verb for reviewed records. It must
+  be constrained to exact-`Zero` certainty candidates, preserve compact
+  `RecordSummary` archive material through `ArchiveTarget::Inline` or
+  `ArchiveTarget::File(ArchivePath)`, and return
+  `RemovalCandidatesCollected`.
 - `Observe`-shaped operations project to Sema `Match`.
 - Stream-open variants (domain `Watch` and mandatory `Tap`) project
   to Sema `Subscribe` and carry explicit stream relations.
