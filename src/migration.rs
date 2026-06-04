@@ -181,8 +181,103 @@ pub mod v020 {
     }
 }
 
+pub mod v030 {
+    use nota_codec::{NotaEnum, NotaTransparent};
+    use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+    use signal_sema::Magnitude;
+
+    #[derive(
+        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    )]
+    pub struct Topic(String);
+
+    impl Topic {
+        pub fn new(value: impl Into<String>) -> Self {
+            Self(value.into())
+        }
+
+        pub fn into_current(self) -> crate::Topic {
+            crate::Topic::new(self.0)
+        }
+    }
+
+    #[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct Topics(Vec<Topic>);
+
+    impl Topics {
+        pub fn new(value: Vec<Topic>) -> Self {
+            Self(value)
+        }
+
+        pub fn single(topic: Topic) -> Self {
+            Self(vec![topic])
+        }
+
+        pub fn into_current(self) -> crate::Topics {
+            crate::Topics::new(
+                self.0
+                    .into_iter()
+                    .map(Topic::into_current)
+                    .collect::<Vec<_>>(),
+            )
+        }
+    }
+
+    #[derive(
+        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    )]
+    pub struct Description(String);
+
+    impl Description {
+        pub fn new(value: impl Into<String>) -> Self {
+            Self(value.into())
+        }
+
+        pub fn into_current(self) -> crate::Description {
+            crate::Description::new(self.0)
+        }
+    }
+
+    #[derive(
+        Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    )]
+    pub enum Kind {
+        Decision,
+        Principle,
+        Correction,
+        Clarification,
+        Constraint,
+    }
+
+    impl From<Kind> for crate::Kind {
+        fn from(value: Kind) -> Self {
+            match value {
+                Kind::Decision => Self::Decision,
+                Kind::Principle => Self::Principle,
+                Kind::Correction => Self::Correction,
+                Kind::Clarification => Self::Clarification,
+                Kind::Constraint => Self::Constraint,
+            }
+        }
+    }
+
+    #[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
+    pub struct Entry {
+        pub topics: Topics,
+        pub kind: Kind,
+        pub description: Description,
+        pub certainty: Magnitude,
+    }
+
+    #[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
+    pub enum Operation {
+        Record(Entry),
+    }
+}
+
 pub struct V010ToV011;
 pub struct V020ToV030;
+pub struct V030ToV040;
 
 impl From<v010::Certainty> for Magnitude {
     fn from(value: v010::Certainty) -> Self {
@@ -242,6 +337,33 @@ impl VersionProjection<v020::Operation, Operation> for V020ToV030 {
         match source {
             v020::Operation::Record(entry) => Ok(Operation::Record(<Self as VersionProjection<
                 v020::Entry,
+                Entry,
+            >>::project(entry)?)),
+        }
+    }
+}
+
+impl VersionProjection<v030::Entry, Entry> for V030ToV040 {
+    type Error = ProjectionError;
+
+    fn project(source: v030::Entry) -> Result<Entry, Self::Error> {
+        Ok(Entry {
+            topics: source.topics.into_current(),
+            kind: source.kind.into(),
+            description: source.description.into_current(),
+            certainty: source.certainty,
+            privacy: Magnitude::Zero,
+        })
+    }
+}
+
+impl VersionProjection<v030::Operation, Operation> for V030ToV040 {
+    type Error = ProjectionError;
+
+    fn project(source: v030::Operation) -> Result<Operation, Self::Error> {
+        match source {
+            v030::Operation::Record(entry) => Ok(Operation::Record(<Self as VersionProjection<
+                v030::Entry,
                 Entry,
             >>::project(entry)?)),
         }

@@ -1,7 +1,7 @@
 use nota_codec::{Decoder, NotaDecode};
 use signal_persona_spirit::{
     Entry, Kind, Operation,
-    migration::{V010ToV011, V020ToV030, v010, v020},
+    migration::{V010ToV011, V020ToV030, V030ToV040, v010, v020, v030},
 };
 use signal_sema::Magnitude;
 use version_projection::VersionProjection;
@@ -78,5 +78,31 @@ fn v020_record_entry_projects_to_multi_topic_current_entry_shape() {
         "single topic becomes topic vector"
     );
     assert_eq!(current.certainty, Magnitude::High);
+    assert_eq!(current.privacy, Magnitude::Zero);
+}
+
+#[test]
+fn v030_record_entry_projects_to_privacy_aware_current_entry_shape() {
+    let source = v030::Entry {
+        topics: v030::Topics::new(vec![
+            v030::Topic::new("spirit"),
+            v030::Topic::new("privacy"),
+        ]),
+        kind: v030::Kind::Constraint,
+        description: v030::Description::new("existing intent stays public after migration"),
+        certainty: Magnitude::Maximum,
+    };
+
+    let current = <V030ToV040 as VersionProjection<v030::Entry, Entry>>::project(source).unwrap();
+
+    assert_eq!(current.topics.as_slice().len(), 2);
+    assert_eq!(current.topics.as_slice()[0].as_str(), "spirit");
+    assert_eq!(current.topics.as_slice()[1].as_str(), "privacy");
+    assert_eq!(current.kind, Kind::Constraint);
+    assert_eq!(
+        current.description.as_str(),
+        "existing intent stays public after migration"
+    );
+    assert_eq!(current.certainty, Magnitude::Maximum);
     assert_eq!(current.privacy, Magnitude::Zero);
 }
