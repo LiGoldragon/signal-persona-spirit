@@ -15,7 +15,7 @@ use signal_sema::{Magnitude, SemaObservation};
 pub mod migration;
 
 const RECORD_IDENTIFIER_BYTES: usize = 12;
-const RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH: usize = 3;
+const RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH: usize = 4;
 const RECORD_IDENTIFIER_RADIX: u128 = 36;
 
 #[derive(
