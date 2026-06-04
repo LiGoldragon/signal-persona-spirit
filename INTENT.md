@@ -125,7 +125,11 @@ counts or time windows.
   and intent-record streams is a separate surface and coexists
   without collision.
 - Wire reply shapes stay terse — no verbatim echo of submitted
-  content.
+  content. Record identifiers in replies are daemon-minted opaque
+  random values rendered as lowercase base36, not reusable ordinal
+  row numbers. Exact identifier lookup remains available; ranges over
+  identifiers are removed because history windows belong to recorded-time
+  filters.
 - The dual emission must not introduce duplicate symbol conflicts
   at crate root; the `emit_schema!` wrapping in `pub mod spirit
   { ... }` is what keeps the two paths isolated.

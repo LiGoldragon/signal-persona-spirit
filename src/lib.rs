@@ -14,6 +14,10 @@ use signal_sema::{Magnitude, SemaObservation};
 
 pub mod migration;
 
+const RECORD_IDENTIFIER_BYTES: usize = 12;
+const RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH: usize = 3;
+const RECORD_IDENTIFIER_RADIX: u128 = 36;
+
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
 )]
@@ -116,23 +120,152 @@ impl NotaDecode for Topics {
     Archive,
     RkyvSerialize,
     RkyvDeserialize,
-    NotaTransparent,
     Debug,
     Clone,
     Copy,
     PartialEq,
     Eq,
+    PartialOrd,
+    Ord,
     Hash,
 )]
-pub struct RecordIdentifier(u64);
+pub struct RecordIdentifier([u8; RECORD_IDENTIFIER_BYTES]);
 
 impl RecordIdentifier {
     pub const fn new(value: u64) -> Self {
-        Self(value)
+        let octets = value.to_be_bytes();
+        Self([
+            0, 0, 0, 0, octets[0], octets[1], octets[2], octets[3], octets[4], octets[5],
+            octets[6], octets[7],
+        ])
     }
 
-    pub const fn value(self) -> u64 {
+    pub const fn from_bytes(bytes: [u8; RECORD_IDENTIFIER_BYTES]) -> Self {
+        Self(bytes)
+    }
+
+    pub const fn bytes(self) -> [u8; RECORD_IDENTIFIER_BYTES] {
         self.0
+    }
+
+    pub fn value(self) -> u128 {
+        u128::from_be_bytes([
+            0, 0, 0, 0, self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5],
+            self.0[6], self.0[7], self.0[8], self.0[9], self.0[10], self.0[11],
+        ])
+    }
+
+    pub fn code(self) -> String {
+        RecordIdentifierCode::from_identifier(self).into_string()
+    }
+
+    pub fn from_code(code: &str) -> nota_codec::Result<Self> {
+        RecordIdentifierCode::new(code).into_identifier()
+    }
+}
+
+impl NotaEncode for RecordIdentifier {
+    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
+        encoder.write_string(&self.code())
+    }
+}
+
+impl NotaDecode for RecordIdentifier {
+    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
+        Self::from_code(&decoder.read_string()?)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RecordIdentifierCode {
+    value: String,
+}
+
+impl RecordIdentifierCode {
+    fn new(value: impl Into<String>) -> Self {
+        Self {
+            value: value.into(),
+        }
+    }
+
+    fn from_identifier(identifier: RecordIdentifier) -> Self {
+        let mut value = identifier.value();
+        if value == 0 {
+            return Self::new("0".repeat(RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH));
+        }
+
+        let mut digits = Vec::new();
+        while value > 0 {
+            let digit = (value % RECORD_IDENTIFIER_RADIX) as u8;
+            digits.push(Self::digit_character(digit));
+            value /= RECORD_IDENTIFIER_RADIX;
+        }
+        while digits.len() < RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH {
+            digits.push('0');
+        }
+        digits.reverse();
+        Self::new(digits.into_iter().collect::<String>())
+    }
+
+    fn into_string(self) -> String {
+        self.value
+    }
+
+    fn into_identifier(self) -> nota_codec::Result<RecordIdentifier> {
+        if self.value.len() < RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH {
+            return Err(nota_codec::Error::Validation {
+                type_name: "RecordIdentifier",
+                message: format!(
+                    "record identifier code must be at least {RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH} characters"
+                ),
+            });
+        }
+
+        let mut value = 0_u128;
+        for character in self.value.chars() {
+            let digit = Self::digit_value(character)?;
+            value = value
+                .checked_mul(RECORD_IDENTIFIER_RADIX)
+                .and_then(|accumulated| accumulated.checked_add(digit))
+                .ok_or_else(|| nota_codec::Error::Validation {
+                    type_name: "RecordIdentifier",
+                    message: "record identifier exceeds 96-bit range".to_string(),
+                })?;
+        }
+
+        let bytes = value.to_be_bytes();
+        if bytes[0..4] != [0, 0, 0, 0] {
+            return Err(nota_codec::Error::Validation {
+                type_name: "RecordIdentifier",
+                message: "record identifier exceeds 96-bit range".to_string(),
+            });
+        }
+
+        Ok(RecordIdentifier::from_bytes([
+            bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9], bytes[10], bytes[11],
+            bytes[12], bytes[13], bytes[14], bytes[15],
+        ]))
+    }
+
+    fn digit_character(value: u8) -> char {
+        match value {
+            0..=9 => (b'0' + value) as char,
+            10..=35 => (b'a' + (value - 10)) as char,
+            _ => unreachable!("base36 digit outside alphabet"),
+        }
+    }
+
+    fn digit_value(character: char) -> nota_codec::Result<u128> {
+        match character {
+            '0'..='9' => Ok((character as u8 - b'0') as u128),
+            'a'..='z' => Ok((character as u8 - b'a' + 10) as u128),
+            _ => Err(nota_codec::Error::Validation {
+                type_name: "RecordIdentifier",
+                message: format!(
+                    "record identifier code uses unsupported character {character:?}; use lowercase base36"
+                ),
+            }),
+        }
     }
 }
 
@@ -912,36 +1045,15 @@ impl NotaDecode for RecordQuery {
     }
 }
 
-#[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq,
-)]
-pub struct RecordIdentifierRange {
-    pub first: RecordIdentifier,
-    pub last: RecordIdentifier,
-}
-
-impl RecordIdentifierRange {
-    pub const fn new(first: RecordIdentifier, last: RecordIdentifier) -> Self {
-        Self { first, last }
-    }
-
-    pub fn contains(self, identifier: RecordIdentifier) -> bool {
-        let value = identifier.value();
-        value >= self.first.value() && value <= self.last.value()
-    }
-}
-
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecordIdentifierSelection {
     Exact(RecordIdentifier),
-    Range(RecordIdentifierRange),
 }
 
 impl RecordIdentifierSelection {
     pub fn contains(self, identifier: RecordIdentifier) -> bool {
         match self {
             Self::Exact(expected) => identifier == expected,
-            Self::Range(range) => range.contains(identifier),
         }
     }
 }

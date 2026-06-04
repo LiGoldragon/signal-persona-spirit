@@ -75,9 +75,10 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
   `Recent`, `Shallow`, `Deep`, or `VeryDeep`. The qualitative recency
   depths are interpreted by the daemon after the topic, kind, and
   certainty filters have already narrowed the candidate set.
-- Intent observations can select records by exact `RecordIdentifier`
-  or an inclusive `RecordIdentifierRange` through
-  `Observation::RecordIdentifiers`.
+- Intent observations can select records by exact opaque
+  `RecordIdentifier` through `Observation::RecordIdentifiers`.
+  Identifier ranges are not part of the random-identifier era;
+  agents use `RecordedTimeSelection` for recency/history windows.
 - Intent entries are removed through the ordinary `Remove` verb by
   `RecordIdentifier`; this is intent-store maintenance, not owner
   lifecycle policy.

@@ -10,13 +10,13 @@ use signal_persona_spirit::{
     Presence, PresenceView, PrivacyScopedRecordIdentifierQuery, PrivacyScopedRecordQuery,
     PrivacySelection, PublicRecordQuery, QuestionIdentifier, QuestionSummary, QuestionText,
     QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier, RecordIdentifierQuery,
-    RecordIdentifierRange, RecordIdentifierSelection, RecordProvenance, RecordProvenancesObserved,
-    RecordQuery, RecordRemoved, RecordSubscription, RecordSubscriptionToken, RecordedTime,
-    RecordedTimeRange, RecordedTimeSelection, RecordsObserved, RemovalCandidateCollection,
-    RemovalCandidatesCollected, Reply, RequestUnimplemented, StateChanged, StateObserved,
-    StateSubscriptionToken, Statement, StatementText, Subscription, SubscriptionOpened,
-    SubscriptionRetracted, SubscriptionSnapshot, SubscriptionToken, Time, Topic, TopicCount,
-    TopicSelection, Topics, TopicsObserved, UnimplementedReason,
+    RecordIdentifierSelection, RecordProvenance, RecordProvenancesObserved, RecordQuery,
+    RecordRemoved, RecordSubscription, RecordSubscriptionToken, RecordedTime, RecordedTimeRange,
+    RecordedTimeSelection, RecordsObserved, RemovalCandidateCollection, RemovalCandidatesCollected,
+    Reply, RequestUnimplemented, StateChanged, StateObserved, StateSubscriptionToken, Statement,
+    StatementText, Subscription, SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot,
+    SubscriptionToken, Time, Topic, TopicCount, TopicSelection, Topics, TopicsObserved,
+    UnimplementedReason,
 };
 use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
 
@@ -249,7 +249,7 @@ fn spirit_replies_round_trip() {
 
 #[test]
 fn legacy_description_only_input_decodes_as_summary_only() {
-    let mut decoder = Decoder::new("(Observe (RecordIdentifiers ((Exact 1053) DescriptionOnly)))");
+    let mut decoder = Decoder::new("(Observe (RecordIdentifiers ((Exact [0t9]) DescriptionOnly)))");
     let operation = Operation::decode(&mut decoder).expect("legacy mode decodes");
 
     assert_eq!(
@@ -560,17 +560,7 @@ fn spirit_canonical_examples_round_trip() {
             RecordIdentifierSelection::Exact(RecordIdentifier::new(1053)),
             ObservationMode::SummaryOnly,
         ))),
-        "(Observe (RecordIdentifiers ((Exact 1053) SummaryOnly)))",
-    );
-    round_trip_nota(
-        Operation::Observe(Observation::RecordIdentifiers(RecordIdentifierQuery::new(
-            RecordIdentifierSelection::Range(RecordIdentifierRange::new(
-                RecordIdentifier::new(1048),
-                RecordIdentifier::new(1053),
-            )),
-            ObservationMode::WithProvenance,
-        ))),
-        "(Observe (RecordIdentifiers ((Range (1048 1053)) WithProvenance)))",
+        "(Observe (RecordIdentifiers ((Exact [0t9]) SummaryOnly)))",
     );
     round_trip_nota(
         Operation::Observe(Observation::PrivateRecordIdentifiers(
@@ -582,7 +572,7 @@ fn spirit_canonical_examples_round_trip() {
                 ),
             ),
         )),
-        "(Observe (PrivateRecordIdentifiers ((AtMost High) ((Exact 1053) SummaryOnly))))",
+        "(Observe (PrivateRecordIdentifiers ((AtMost High) ((Exact [0t9]) SummaryOnly))))",
     );
     round_trip_nota(Operation::Observe(Observation::Topics), "(Observe Topics)");
     round_trip_nota(
@@ -603,13 +593,16 @@ fn spirit_canonical_examples_round_trip() {
         })),
         "(Unwatch (Records (2)))",
     );
-    round_trip_nota(Operation::Remove(RecordIdentifier::new(1)), "(Remove 1)");
+    round_trip_nota(
+        Operation::Remove(RecordIdentifier::new(1)),
+        "(Remove [001])",
+    );
     round_trip_nota(
         Operation::ChangeCertainty(CertaintyChange {
             identifier: RecordIdentifier::new(1),
             certainty: Magnitude::Zero,
         }),
-        "(ChangeCertainty (1 Zero))",
+        "(ChangeCertainty ([001] Zero))",
     );
     round_trip_nota(
         Operation::CollectRemovalCandidates(RemovalCandidateCollection::default_archive_database()),
@@ -634,18 +627,18 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         Reply::RecordAccepted(RecordAccepted::new(RecordIdentifier::new(1))),
-        "(RecordAccepted 1)",
+        "(RecordAccepted [001])",
     );
     round_trip_nota(
         Reply::RecordRemoved(RecordRemoved::new(RecordIdentifier::new(1))),
-        "(RecordRemoved 1)",
+        "(RecordRemoved [001])",
     );
     round_trip_nota(
         Reply::CertaintyChanged(CertaintyChanged {
             identifier: RecordIdentifier::new(1),
             certainty: Magnitude::Zero,
         }),
-        "(CertaintyChanged (1 Zero))",
+        "(CertaintyChanged ([001] Zero))",
     );
     round_trip_nota(
         Reply::RemovalCandidatesCollected(RemovalCandidatesCollected::new(
@@ -653,7 +646,7 @@ fn spirit_canonical_examples_round_trip() {
             vec![RecordIdentifier::new(1)],
             Vec::new(),
         )),
-        "(RemovalCandidatesCollected ([(1 [workspace] Correction [candidate description] Zero Zero)] [1] []))",
+        "(RemovalCandidatesCollected ([([001] [workspace] Correction [candidate description] Zero Zero)] [[001]] []))",
     );
     round_trip_nota(
         Reply::StateObserved(StateObserved::new(state())),
@@ -661,11 +654,11 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         Reply::RecordsObserved(RecordsObserved::new(vec![description()])),
-        "(RecordsObserved [(1 [workspace] Decision [description only] Maximum Zero)])",
+        "(RecordsObserved [([001] [workspace] Decision [description only] Maximum Zero)])",
     );
     round_trip_nota(
         Reply::RecordProvenancesObserved(RecordProvenancesObserved::new(vec![provenance()])),
-        "(RecordProvenancesObserved [((1 [workspace] Decision [description only] Maximum Zero) 2026-05-20 14:30:00)])",
+        "(RecordProvenancesObserved [(([001] [workspace] Decision [description only] Maximum Zero) 2026-05-20 14:30:00)])",
     );
     round_trip_nota(
         Reply::TopicsObserved(TopicsObserved::new(vec![TopicCount {
@@ -685,7 +678,7 @@ fn spirit_canonical_examples_round_trip() {
         Event::RecordCaptured(RecordCaptured {
             record: description(),
         }),
-        "(RecordCaptured ((1 [workspace] Decision [description only] Maximum Zero)))",
+        "(RecordCaptured (([001] [workspace] Decision [description only] Maximum Zero)))",
     );
     round_trip_nota(
         Event::EffectEmitted(EffectEmitted {
