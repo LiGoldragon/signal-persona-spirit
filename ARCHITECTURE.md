@@ -119,6 +119,7 @@ label is computed at observation publish time inside the daemon.
 | Intent entries can be removed explicitly by identifier. | `Remove(RecordIdentifier)` round-trips through RKYV and NOTA and returns `RecordRemoved`. |
 | Intent entries can be nominated for removal without deletion. | `ChangeCertainty(CertaintyChange)` round-trips through RKYV and NOTA and returns `CertaintyChanged`; setting certainty to `Zero` makes the record visible to removal-candidate review. |
 | Removal-candidate collection is explicit capture-before-retract maintenance. | `CollectRemovalCandidates(RemovalCandidateCollection)` round-trips through RKYV and NOTA, requires exact-`Zero` certainty and exact-`Zero` privacy by contract method, carries `OutputTarget::ArchiveDatabase(Default)` for the daemon-derived archive database, `OutputTarget::ArchiveDatabase(Path(ArchivePath))` for an explicit archive database path, or `OutputTarget::Print(OutputStream)` for client-rendered compact material, and returns `RemovalCandidatesCollected` with compact `RecordSummary` archive material plus removed identifiers and skipped candidates. |
+| Historical storage migration shapes stay contract-owned and explicit. | `tests/migration.rs` projects a v0.3.0 `migration::v030::Entry` and `migration::v030::Operation::Record` into the current privacy-aware shape with `privacy = Zero`, proving the daemon can read the prior production row shape without guessing at bytes. |
 | Agents can inspect the intent-topic catalog without reading every entry. | `Observation::Topics` returns `TopicsObserved` with one `TopicCount` per topic membership. |
 | Every submitted entry is one top-level psyche statement without client-provided capture time. | `Entry` carries one or more topics, kind, description, required `Magnitude` certainty, and required `Magnitude` privacy; repeated entries are the restatement signal. |
 | Spirit never accepts client-provided timestamps on `Record` requests. | `record_request_with_client_timestamp_shape_is_rejected` and `record_request_with_parenthesized_client_date_time_shape_is_rejected` fail old timestamp-bearing input shapes. |
@@ -131,6 +132,8 @@ label is computed at observation publish time inside the daemon.
 
 ```text
 src/lib.rs              — request/reply/event records and signal_channel! invocation
+src/migration.rs        — historical contract shapes and projection bridges for store migrations
 examples/canonical.nota — canonical NOTA examples
 tests/round_trip.rs     — rkyv frame, NOTA, verb, and stream witnesses
+tests/migration.rs      — prior-version projection witnesses
 ```

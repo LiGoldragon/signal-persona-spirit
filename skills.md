@@ -49,6 +49,11 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
   archive database selected by `OutputTarget::ArchiveDatabase` or return
   it to the client through `OutputTarget::Print`, and return
   `RemovalCandidatesCollected`.
+- Historical migration modules are part of the contract surface when a
+  daemon store migration needs the prior production row shape. Keep them
+  explicit, version-named (`migration::v030`), and tested; they may
+  project into the current contract, but they must not contain daemon
+  runtime, sockets, actors, storage, or classifier logic.
 - `Observe`-shaped operations project to Sema `Match`.
 - Stream-open variants (domain `Watch` and mandatory `Tap`) project
   to Sema `Subscribe` and carry explicit stream relations.

@@ -86,6 +86,13 @@ compact `RecordSummary` archive material in a sema archive database,
 or returns it through an explicit print target, and only then allows
 the runtime to retract those records from the hot store.
 
+Historical storage migration shapes belong in this contract crate when
+the daemon needs to read prior production records. The v0.3.0 shape is
+captured under `migration::v030` and projects into the current
+privacy-aware shape with `privacy = Zero`; this keeps the stored-data
+bridge typed and reviewable rather than making `persona-spirit` guess at
+old row layouts.
+
 Record observation can also filter by daemon-stamped capture time:
 any time, inclusive time range, since a recorded moment, until a
 recorded moment, or qualitative recency depth. Qualitative depths
