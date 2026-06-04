@@ -72,19 +72,19 @@ matching, or full every-topic matching. Certainty is the shared
 for removal in Spirit, while `Minimum` remains weak but real intent.
 Privacy is a second directional `Magnitude` axis, not a named tier
 enum: `Zero` means open/public intent, and higher magnitudes narrow
-the intended audience. Observation filters can select no certainty
-filter, exact certainty, at-most certainty, or at-least certainty;
-the same selector shape applies to privacy. Default record
-observation selects exact `Zero` privacy so elevated records are not
-returned unless the caller asks for them. Removal candidate review
+the intended audience. Public observation types have no privacy
+field and select exact `Zero` privacy by type; elevated reads use
+explicit privacy-scoped variants carrying a `PrivacySelection`.
+Observation filters can select no certainty filter, exact certainty,
+at-most certainty, or at-least certainty. Removal candidate review
 uses exact `Zero` certainty. The ordinary maintenance operation
 `ChangeCertainty` changes an existing record's certainty, including
 lowering it to `Zero` for review without deleting it.
 Candidate collection is a separate explicit maintenance operation:
 `CollectRemovalCandidates` selects exact-`Zero` records, preserves
-compact `RecordSummary` archive material through inline reply data
-or a daemon-written file target, and only then allows the runtime to
-retract those records from the hot store.
+compact `RecordSummary` archive material in a sema archive database,
+or returns it through an explicit print target, and only then allows
+the runtime to retract those records from the hot store.
 
 Record observation can also filter by daemon-stamped capture time:
 any time, inclusive time range, since a recorded moment, until a

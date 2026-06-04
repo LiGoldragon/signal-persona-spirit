@@ -43,10 +43,11 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
   maintenance verb for replacing an existing record's certainty; `Zero`
   is the review-nomination value, not a delete operation by itself.
 - `CollectRemovalCandidates(RemovalCandidateCollection)` is the ordinary
-  archive-before-retract maintenance verb for reviewed records. It must
-  be constrained to exact-`Zero` certainty candidates, preserve compact
-  `RecordSummary` archive material through `ArchiveTarget::Inline` or
-  `ArchiveTarget::File(ArchivePath)`, and return
+  capture-before-retract maintenance verb for reviewed records. It must
+  be constrained to exact-`Zero` certainty and exact-`Zero` privacy
+  candidates, preserve compact `RecordSummary` material through a sema
+  archive database selected by `OutputTarget::ArchiveDatabase` or return
+  it to the client through `OutputTarget::Print`, and return
   `RemovalCandidatesCollected`.
 - `Observe`-shaped operations project to Sema `Match`.
 - Stream-open variants (domain `Watch` and mandatory `Tap`) project
@@ -61,9 +62,9 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 - Intent observations can filter required `Magnitude` certainty with
   `Any`, `Exact`, `AtMost`, or `AtLeast`. Removal-candidate review is
   the exact `Zero` query.
-- Intent observations can filter required `Magnitude` privacy with
-  `Any`, `Exact`, `AtMost`, or `AtLeast`. Default record observation is
-  exact `Zero` privacy; elevated records must be explicitly requested.
+- Public intent observations cannot carry a privacy selector and mean exact
+  `Zero` privacy. Elevated records must be requested through explicit
+  privacy-scoped observation variants carrying `PrivacySelection`.
 - Intent observations can filter daemon-stamped capture time with
   `RecordedTimeSelection`: `Any`, `Between`, `Since`, `Until`,
   `Recent`, `Shallow`, `Deep`, or `VeryDeep`. The qualitative recency

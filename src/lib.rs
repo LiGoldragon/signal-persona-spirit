@@ -647,6 +647,182 @@ impl RecordQuery {
     }
 }
 
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, Debug, Clone, PartialEq, Eq)]
+pub struct PublicRecordQuery {
+    pub topic_selection: TopicSelection,
+    pub kind: Option<Kind>,
+    pub certainty_selection: CertaintySelection,
+    pub recorded_time_selection: RecordedTimeSelection,
+    pub mode: ObservationMode,
+}
+
+impl PublicRecordQuery {
+    pub fn new(
+        topic_selection: TopicSelection,
+        kind: Option<Kind>,
+        certainty_selection: CertaintySelection,
+        recorded_time_selection: RecordedTimeSelection,
+        mode: ObservationMode,
+    ) -> Self {
+        Self {
+            topic_selection,
+            kind,
+            certainty_selection,
+            recorded_time_selection,
+            mode,
+        }
+    }
+
+    pub fn any(mode: ObservationMode) -> Self {
+        Self::new(
+            TopicSelection::any(),
+            None,
+            CertaintySelection::Any,
+            RecordedTimeSelection::Any,
+            mode,
+        )
+    }
+
+    pub fn removal_candidates(mode: ObservationMode) -> Self {
+        Self::new(
+            TopicSelection::any(),
+            None,
+            CertaintySelection::removal_candidates(),
+            RecordedTimeSelection::Any,
+            mode,
+        )
+    }
+
+    pub fn into_record_query(self) -> RecordQuery {
+        RecordQuery {
+            topic_selection: self.topic_selection,
+            kind: self.kind,
+            certainty_selection: self.certainty_selection,
+            recorded_time_selection: self.recorded_time_selection,
+            privacy_selection: PrivacySelection::default_observation_privacy(),
+            mode: self.mode,
+        }
+    }
+}
+
+impl From<PublicRecordQuery> for RecordQuery {
+    fn from(query: PublicRecordQuery) -> Self {
+        query.into_record_query()
+    }
+}
+
+impl NotaEncode for PublicRecordQuery {
+    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
+        encoder.start_record_untagged()?;
+        self.topic_selection.encode(encoder)?;
+        self.kind.encode(encoder)?;
+        self.certainty_selection.encode(encoder)?;
+        self.recorded_time_selection.encode(encoder)?;
+        self.mode.encode(encoder)?;
+        encoder.end_record()
+    }
+}
+
+impl NotaDecode for PublicRecordQuery {
+    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
+        decoder.expect_positional_record_start("PublicRecordQuery", 5)?;
+        let topic_selection = TopicSelection::decode(decoder)?;
+        let kind = Option::<Kind>::decode(decoder)?;
+        let next = decoder.peek_token()?;
+        let (certainty_selection, recorded_time_selection, mode) = match next {
+            Some(Token::Ident(name))
+                if name == "SummaryOnly"
+                    || name == "WithProvenance"
+                    || name == "DescriptionOnly" =>
+            {
+                (
+                    CertaintySelection::Any,
+                    RecordedTimeSelection::Any,
+                    ObservationMode::decode(decoder)?,
+                )
+            }
+            _ => {
+                let certainty_selection = CertaintySelection::decode(decoder)?;
+                let next = decoder.peek_token()?;
+                let (recorded_time_selection, mode) = match next {
+                    Some(Token::Ident(name))
+                        if name == "SummaryOnly"
+                            || name == "WithProvenance"
+                            || name == "DescriptionOnly" =>
+                    {
+                        (
+                            RecordedTimeSelection::Any,
+                            ObservationMode::decode(decoder)?,
+                        )
+                    }
+                    _ => {
+                        let recorded_time_selection = RecordedTimeSelection::decode(decoder)?;
+                        let next = decoder.peek_token()?;
+                        let mode = match next {
+                            Some(Token::Ident(name))
+                                if name == "SummaryOnly"
+                                    || name == "WithProvenance"
+                                    || name == "DescriptionOnly" =>
+                            {
+                                ObservationMode::decode(decoder)?
+                            }
+                            _ => {
+                                let privacy_selection = PrivacySelection::decode(decoder)?;
+                                if privacy_selection
+                                    != PrivacySelection::default_observation_privacy()
+                                {
+                                    return Err(nota_codec::Error::Validation {
+                                        type_name: "PublicRecordQuery",
+                                        message:
+                                            "public record queries cannot carry elevated privacy"
+                                                .to_string(),
+                                    });
+                                }
+                                ObservationMode::decode(decoder)?
+                            }
+                        };
+                        (recorded_time_selection, mode)
+                    }
+                };
+                (certainty_selection, recorded_time_selection, mode)
+            }
+        };
+        decoder.expect_record_end()?;
+        Ok(Self {
+            topic_selection,
+            kind,
+            certainty_selection,
+            recorded_time_selection,
+            mode,
+        })
+    }
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct PrivacyScopedRecordQuery {
+    pub privacy_selection: PrivacySelection,
+    pub public_record_query: PublicRecordQuery,
+}
+
+impl PrivacyScopedRecordQuery {
+    pub fn new(privacy_selection: PrivacySelection, query: PublicRecordQuery) -> Self {
+        Self {
+            privacy_selection,
+            public_record_query: query,
+        }
+    }
+
+    pub fn at_most(privacy: Privacy, query: PublicRecordQuery) -> Self {
+        Self::new(PrivacySelection::AtMost(privacy), query)
+    }
+
+    pub fn into_record_query(self) -> RecordQuery {
+        let mut query = self.public_record_query.into_record_query();
+        query.privacy_selection = self.privacy_selection;
+        query
+    }
+}
+
 impl NotaEncode for RecordQuery {
     fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
         encoder.start_record_untagged()?;
@@ -794,48 +970,113 @@ impl RecordIdentifierQuery {
     }
 }
 
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq,
+)]
+pub struct PrivacyScopedRecordIdentifierQuery {
+    pub privacy_selection: PrivacySelection,
+    pub record_identifier_query: RecordIdentifierQuery,
+}
+
+impl PrivacyScopedRecordIdentifierQuery {
+    pub const fn new(privacy_selection: PrivacySelection, query: RecordIdentifierQuery) -> Self {
+        Self {
+            privacy_selection,
+            record_identifier_query: query,
+        }
+    }
+
+    pub const fn at_most(privacy: Privacy, query: RecordIdentifierQuery) -> Self {
+        Self::new(PrivacySelection::AtMost(privacy), query)
+    }
+}
+
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RecordObservation {
     pub query: RecordQuery,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
-pub enum ArchiveTarget {
-    Inline,
-    File(ArchivePath),
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OutputStream {
+    StandardOutput,
+    StandardError,
 }
 
-impl ArchiveTarget {
-    pub fn file(path: impl Into<String>) -> Self {
-        Self::File(ArchivePath::new(path))
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+pub enum ArchiveDatabaseTarget {
+    Default,
+    Path(ArchivePath),
+}
+
+impl ArchiveDatabaseTarget {
+    pub fn path(path: impl Into<String>) -> Self {
+        Self::Path(ArchivePath::new(path))
+    }
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+pub enum OutputTarget {
+    ArchiveDatabase(ArchiveDatabaseTarget),
+    Print(OutputStream),
+}
+
+impl OutputTarget {
+    pub const fn default_archive_database() -> Self {
+        Self::ArchiveDatabase(ArchiveDatabaseTarget::Default)
+    }
+
+    pub fn archive_database(path: impl Into<String>) -> Self {
+        Self::ArchiveDatabase(ArchiveDatabaseTarget::path(path))
+    }
+
+    pub const fn print_standard_output() -> Self {
+        Self::Print(OutputStream::StandardOutput)
+    }
+
+    pub const fn print_standard_error() -> Self {
+        Self::Print(OutputStream::StandardError)
     }
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct RemovalCandidateCollection {
     pub record_query: RecordQuery,
-    pub archive_target: ArchiveTarget,
+    pub output_target: OutputTarget,
 }
 
 impl RemovalCandidateCollection {
-    pub fn new(record_query: RecordQuery, archive_target: ArchiveTarget) -> Self {
+    pub fn new(record_query: RecordQuery, output_target: OutputTarget) -> Self {
         Self {
             record_query,
-            archive_target,
+            output_target,
         }
     }
 
-    pub fn inline() -> Self {
+    pub fn default_archive_database() -> Self {
         Self::new(
             RecordQuery::removal_candidates(ObservationMode::SummaryOnly),
-            ArchiveTarget::Inline,
+            OutputTarget::default_archive_database(),
         )
     }
 
-    pub fn file(path: impl Into<String>) -> Self {
+    pub fn archive_database(path: impl Into<String>) -> Self {
         Self::new(
             RecordQuery::removal_candidates(ObservationMode::SummaryOnly),
-            ArchiveTarget::file(path),
+            OutputTarget::archive_database(path),
+        )
+    }
+
+    pub fn print_standard_output() -> Self {
+        Self::new(
+            RecordQuery::removal_candidates(ObservationMode::SummaryOnly),
+            OutputTarget::print_standard_output(),
+        )
+    }
+
+    pub fn print_standard_error() -> Self {
+        Self::new(
+            RecordQuery::removal_candidates(ObservationMode::SummaryOnly),
+            OutputTarget::print_standard_error(),
         )
     }
 
@@ -843,6 +1084,9 @@ impl RemovalCandidateCollection {
         matches!(
             self.record_query.certainty_selection,
             CertaintySelection::Exact(Magnitude::Zero)
+        ) && matches!(
+            self.record_query.privacy_selection,
+            PrivacySelection::Exact(Magnitude::Zero)
         )
     }
 }
@@ -851,6 +1095,25 @@ impl RemovalCandidateCollection {
 pub struct RecordSubscription {
     pub topic: Option<Topic>,
     pub mode: ObservationMode,
+}
+
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct PrivacyScopedRecordSubscription {
+    pub privacy_selection: PrivacySelection,
+    pub record_subscription: RecordSubscription,
+}
+
+impl PrivacyScopedRecordSubscription {
+    pub fn new(privacy_selection: PrivacySelection, subscription: RecordSubscription) -> Self {
+        Self {
+            privacy_selection,
+            record_subscription: subscription,
+        }
+    }
+
+    pub fn at_most(privacy: Privacy, subscription: RecordSubscription) -> Self {
+        Self::new(PrivacySelection::AtMost(privacy), subscription)
+    }
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
@@ -1095,8 +1358,10 @@ impl QuestionsObserved {
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
 pub enum Observation {
     State,
-    Records(RecordQuery),
+    Records(PublicRecordQuery),
+    PrivateRecords(PrivacyScopedRecordQuery),
     RecordIdentifiers(RecordIdentifierQuery),
+    PrivateRecordIdentifiers(PrivacyScopedRecordIdentifierQuery),
     Topics,
     Questions,
 }
@@ -1105,6 +1370,7 @@ pub enum Observation {
 pub enum Subscription {
     State,
     Records(RecordSubscription),
+    PrivateRecords(PrivacyScopedRecordSubscription),
 }
 
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]

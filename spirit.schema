@@ -59,11 +59,16 @@
   Entry [Topics Kind Description Certainty Privacy]
   CertaintyChange [RecordIdentifier Certainty]
   Statement [StatementText]
+  PublicRecordQuery [TopicSelection (Option Kind) CertaintySelection RecordedTimeSelection Mode]
   RecordQuery [TopicSelection (Option Kind) CertaintySelection RecordedTimeSelection PrivacySelection Mode]
+  PrivacyScopedRecordQuery [PrivacySelection PublicRecordQuery]
   RecordObservation [RecordQuery]
-  ArchiveTarget (Inline (File ArchivePath))
-  RemovalCandidateCollection [RecordQuery ArchiveTarget]
+  OutputStream (StandardOutput StandardError)
+  ArchiveDatabaseTarget (Default (Path ArchivePath))
+  OutputTarget ((ArchiveDatabase ArchiveDatabaseTarget) (Print OutputStream))
+  RemovalCandidateCollection [RecordQuery OutputTarget]
   RecordSubscription [(Option Topic) Mode]
+  PrivacyScopedRecordSubscription [PrivacySelection RecordSubscription]
   RecordSummary [RecordIdentifier Topics Kind Description Certainty Privacy]
   RecordProvenance [RecordSummary Date Time]
   RemovalCandidateSkipReason (ArchiveFailed RecordChanged RecordAlreadyRemoved NoLongerCandidate)
@@ -91,8 +96,9 @@
   Time [u8 u8 u8]
   Presence (Active Absent)
   UnimplementedReason (NotBuiltYet IntegrationNotLanded)
-  Observation (State (Records RecordQuery) (RecordIdentifiers RecordIdentifierQuery) Topics Questions)
-  Subscription (State (Records RecordSubscription))
+  PrivacyScopedRecordIdentifierQuery [PrivacySelection RecordIdentifierQuery]
+  Observation (State (Records PublicRecordQuery) (PrivateRecords PrivacyScopedRecordQuery) (RecordIdentifiers RecordIdentifierQuery) (PrivateRecordIdentifiers PrivacyScopedRecordIdentifierQuery) Topics Questions)
+  Subscription (State (Records RecordSubscription) (PrivateRecords PrivacyScopedRecordSubscription))
   SubscriptionToken ((State StateSubscriptionToken) (Records RecordSubscriptionToken))
   OperationKind (State Record Observe Watch Unwatch Remove ChangeCertainty CollectRemovalCandidates Tap Untap)
   OperationReceived [OperationKind]
