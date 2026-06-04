@@ -38,7 +38,9 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
   higher magnitudes narrow the intended audience.
 - Capture time appears only in daemon-produced provenance as a bare
   `YYYY-MM-DD` date field and a bare `HH:MM:SS` time field.
-- `RecordIdentifier` is output-only and minted by `persona-spirit`.
+- `RecordIdentifier` is output-only and minted by `persona-spirit`; production
+  identifiers render as shortest collision-free lowercase base36 codes from
+  four to seven characters, while older long codes remain decodable.
 - `ChangeCertainty(CertaintyChange)` is the ordinary mutate-shaped
   maintenance verb for replacing an existing record's certainty; `Zero`
   is the review-nomination value, not a delete operation by itself.

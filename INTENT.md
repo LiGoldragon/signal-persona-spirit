@@ -133,6 +133,10 @@ counts or time windows.
 - The dual emission must not introduce duplicate symbol conflicts
   at crate root; the `emit_schema!` wrapping in `pub mod spirit
   { ... }` is what keeps the two paths isolated.
+- Record identifiers are opaque lowercase base36 codes minted by
+  `persona-spirit`. The production display/query surface uses the shortest
+  collision-free four-to-seven-character code; the underlying wire type stays
+  wide enough to decode older long identifier codes during migration.
 
 ## Principles
 
