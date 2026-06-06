@@ -4,7 +4,7 @@ use signal_frame::{
 };
 use signal_persona_spirit::{
     CertaintyChange, CertaintySelection, Description, Entry, Frame, FrameBody, Kind, Observation,
-    ObservationMode, Operation, OperationKind, PublicRecordQuery, RecordIdentifier,
+    ObservationMode, Operation, OperationKind, PublicRecordQuery, RecordChange, RecordIdentifier,
     RecordedTimeSelection, RemovalCandidateCollection, Reply, RequestUnimplemented, Statement,
     StatementText, Topic, TopicSelection, Topics, UnimplementedReason,
 };
@@ -65,6 +65,11 @@ impl signal_persona_spirit::OperationHandler for DispatchWitness {
         _payload: CertaintyChange,
     ) -> Result<Reply, Self::Error> {
         self.handled.push(OperationKind::ChangeCertainty);
+        Ok(unimplemented_reply())
+    }
+
+    async fn handle_change_record(&mut self, _payload: RecordChange) -> Result<Reply, Self::Error> {
+        self.handled.push(OperationKind::ChangeRecord);
         Ok(unimplemented_reply())
     }
 

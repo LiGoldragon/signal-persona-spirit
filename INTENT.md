@@ -80,6 +80,10 @@ at-most certainty, or at-least certainty. Removal candidate review
 uses exact `Zero` certainty. The ordinary maintenance operation
 `ChangeCertainty` changes an existing record's certainty, including
 lowering it to `Zero` for review without deleting it.
+`ChangeRecord` changes an existing record's user-authored entry in place
+while preserving the daemon-minted identifier and daemon-owned
+provenance, so a mistaken record can be corrected without remove-and-
+recreate.
 Candidate collection is a separate explicit maintenance operation:
 `CollectRemovalCandidates` selects exact-`Zero` records, preserves
 compact `RecordSummary` archive material in a sema archive database,

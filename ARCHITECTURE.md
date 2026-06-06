@@ -36,6 +36,8 @@ The ordinary contract uses contract-local verbs:
   to delete from the daemon-owned store).
 - `ChangeCertainty` (intent-store maintenance — payload is a
   `CertaintyChange` naming the record and replacement certainty).
+- `ChangeRecord` (intent-store maintenance — payload is a
+  `RecordChange` naming the record and replacement entry).
 - `CollectRemovalCandidates` (intent-store maintenance — payload is a
   `RemovalCandidateCollection` that selects exact-`Zero` candidates and
   names an output target before daemon-side retraction).
@@ -100,6 +102,7 @@ Sema observations rather than executable effect records.
 | `Unwatch` (domain records stream) | `RecordsSubscriptionToken` | `Retract` |
 | `Remove` | `RecordIdentifier` | `Retract` |
 | `ChangeCertainty` | `CertaintyChange` | `Mutate` |
+| `ChangeRecord` | `RecordChange` | `Mutate` |
 | `CollectRemovalCandidates` | `RemovalCandidateCollection` | `Retract` |
 | `Tap` (mandatory observability) | `ObserverFilter` | `Subscribe` |
 | `Untap` (mandatory observability) | `ObserverSubscriptionToken` | `Retract` |
@@ -118,6 +121,7 @@ label is computed at observation publish time inside the daemon.
 | Intent record queries support the agent-useful filters needed for intent work. | `PublicRecordQuery` carries `TopicSelection` (`Any`, `Partial`, `Full`), optional `kind`, `CertaintySelection` (`Any`, `Exact`, `AtMost`, `AtLeast`), `RecordedTimeSelection` (`Any`, `Between`, `Since`, `Until`, `Recent`, `Shallow`, `Deep`, `VeryDeep`), and description/provenance mode; it has no privacy field and means exact-`Zero` privacy. `RecordIdentifierQuery` selects one opaque identifier exactly; identifier ranges are intentionally absent because random identifiers do not carry recency or ordinal meaning. `PrivacyScopedRecordQuery` and `PrivacyScopedRecordIdentifierQuery` are explicit elevated read shapes carrying `PrivacySelection` (`Any`, `Exact`, `AtMost`, `AtLeast`). `RecordQuery` remains the full maintenance/internal query shape for candidate collection and daemon projection. |
 | Intent entries can be removed explicitly by identifier. | `Remove(RecordIdentifier)` round-trips through RKYV and NOTA and returns `RecordRemoved`; production identifiers are opaque lowercase base36 codes minted by `persona-spirit`, normally rendered at the shortest collision-free four-to-seven-character length while the wire type remains wide enough to decode older long codes. |
 | Intent entries can be nominated for removal without deletion. | `ChangeCertainty(CertaintyChange)` round-trips through RKYV and NOTA and returns `CertaintyChanged`; setting certainty to `Zero` makes the record visible to removal-candidate review. |
+| Intent entries can be corrected in place without remove-and-recreate. | `ChangeRecord(RecordChange)` round-trips through RKYV and NOTA and returns `RecordMutationApplied`; the daemon replaces the user-authored `Entry` fields under the same `RecordIdentifier` while preserving daemon-owned provenance. |
 | Removal-candidate collection is explicit capture-before-retract maintenance. | `CollectRemovalCandidates(RemovalCandidateCollection)` round-trips through RKYV and NOTA, requires exact-`Zero` certainty and exact-`Zero` privacy by contract method, carries `OutputTarget::ArchiveDatabase(Default)` for the daemon-derived archive database, `OutputTarget::ArchiveDatabase(Path(ArchivePath))` for an explicit archive database path, or `OutputTarget::Print(OutputStream)` for client-rendered compact material, and returns `RemovalCandidatesCollected` with compact `RecordSummary` archive material plus removed identifiers and skipped candidates. |
 | Historical storage migration shapes stay contract-owned and explicit. | `tests/migration.rs` projects a v0.3.0 `migration::v030::Entry` and `migration::v030::Operation::Record` into the current privacy-aware shape with `privacy = Zero`, proving the daemon can read the prior production row shape without guessing at bytes. |
 | Agents can inspect the intent-topic catalog without reading every entry. | `Observation::Topics` returns `TopicsObserved` with one `TopicCount` per topic membership. |

@@ -9,11 +9,12 @@ use signal_persona_spirit::{
     ObserverFilterMatch, ObserverSubscriptionToken, Operation, OperationKind, OperationReceived,
     Presence, PresenceView, PrivacyScopedRecordIdentifierQuery, PrivacyScopedRecordQuery,
     PrivacySelection, PublicRecordQuery, QuestionIdentifier, QuestionSummary, QuestionText,
-    QuestionsObserved, RecordAccepted, RecordCaptured, RecordIdentifier, RecordIdentifierQuery,
-    RecordIdentifierSelection, RecordProvenance, RecordProvenancesObserved, RecordQuery,
-    RecordRemoved, RecordSubscription, RecordSubscriptionToken, RecordedTime, RecordedTimeRange,
-    RecordedTimeSelection, RecordsObserved, RemovalCandidateCollection, RemovalCandidatesCollected,
-    Reply, RequestUnimplemented, StateChanged, StateObserved, StateSubscriptionToken, Statement,
+    QuestionsObserved, RecordAccepted, RecordCaptured, RecordChange, RecordIdentifier,
+    RecordIdentifierQuery, RecordIdentifierSelection, RecordMutationApplied, RecordProvenance,
+    RecordProvenancesObserved, RecordQuery, RecordRemoved, RecordSubscription,
+    RecordSubscriptionToken, RecordedTime, RecordedTimeRange, RecordedTimeSelection,
+    RecordsObserved, RemovalCandidateCollection, RemovalCandidatesCollected, Reply,
+    RequestUnimplemented, StateChanged, StateObserved, StateSubscriptionToken, Statement,
     StatementText, Subscription, SubscriptionOpened, SubscriptionRetracted, SubscriptionSnapshot,
     SubscriptionToken, Time, Topic, TopicCount, TopicSelection, Topics, TopicsObserved,
     UnimplementedReason,
@@ -186,6 +187,10 @@ fn spirit_requests_round_trip() {
             identifier: RecordIdentifier::new(1),
             certainty: Magnitude::Zero,
         }),
+        Operation::ChangeRecord(RecordChange {
+            record_identifier: RecordIdentifier::new(1),
+            entry: entry(),
+        }),
         Operation::CollectRemovalCandidates(RemovalCandidateCollection::default_archive_database()),
         Operation::Tap(ObserverFilter::OperationsOnly),
         Operation::Untap(ObserverSubscriptionToken::new(SubscriptionTokenInner::new(
@@ -207,6 +212,7 @@ fn spirit_replies_round_trip() {
             identifier: RecordIdentifier::new(1),
             certainty: Magnitude::Zero,
         }),
+        Reply::RecordMutationApplied(RecordMutationApplied::new(RecordIdentifier::new(1))),
         Reply::RemovalCandidatesCollected(RemovalCandidatesCollected::new(
             vec![candidate_description()],
             vec![RecordIdentifier::new(1)],
@@ -606,6 +612,13 @@ fn spirit_canonical_examples_round_trip() {
         "(ChangeCertainty ([0001] Zero))",
     );
     round_trip_nota(
+        Operation::ChangeRecord(RecordChange {
+            record_identifier: RecordIdentifier::new(1),
+            entry: entry(),
+        }),
+        "(ChangeRecord ([0001] ([workspace] Decision [description only] Maximum Zero)))",
+    );
+    round_trip_nota(
         Operation::CollectRemovalCandidates(RemovalCandidateCollection::default_archive_database()),
         "(CollectRemovalCandidates (((Any []) None (Exact Zero) Any (Exact Zero) SummaryOnly) (ArchiveDatabase Default)))",
     );
@@ -640,6 +653,10 @@ fn spirit_canonical_examples_round_trip() {
             certainty: Magnitude::Zero,
         }),
         "(CertaintyChanged ([0001] Zero))",
+    );
+    round_trip_nota(
+        Reply::RecordMutationApplied(RecordMutationApplied::new(RecordIdentifier::new(1))),
+        "(RecordMutationApplied [0001])",
     );
     round_trip_nota(
         Reply::RemovalCandidatesCollected(RemovalCandidatesCollected::new(

@@ -577,6 +577,18 @@ pub struct CertaintyChange {
     pub certainty: Certainty,
 }
 
+#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+pub struct RecordChange {
+    pub record_identifier: RecordIdentifier,
+    pub entry: Entry,
+}
+
+impl RecordChange {
+    pub const fn identifier(&self) -> RecordIdentifier {
+        self.record_identifier
+    }
+}
+
 #[derive(
     Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
 )]
@@ -1365,6 +1377,21 @@ impl RecordAccepted {
 pub struct RecordRemoved(RecordIdentifier);
 
 impl RecordRemoved {
+    pub const fn new(identifier: RecordIdentifier) -> Self {
+        Self(identifier)
+    }
+
+    pub const fn identifier(self) -> RecordIdentifier {
+        self.0
+    }
+}
+
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, Copy, PartialEq, Eq,
+)]
+pub struct RecordMutationApplied(RecordIdentifier);
+
+impl RecordMutationApplied {
     pub const fn new(identifier: RecordIdentifier) -> Self {
         Self(identifier)
     }

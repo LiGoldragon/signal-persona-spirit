@@ -44,6 +44,9 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 - `ChangeCertainty(CertaintyChange)` is the ordinary mutate-shaped
   maintenance verb for replacing an existing record's certainty; `Zero`
   is the review-nomination value, not a delete operation by itself.
+- `ChangeRecord(RecordChange)` is the ordinary mutate-shaped maintenance
+  verb for replacing an existing record's user-authored `Entry` fields
+  while the daemon preserves the `RecordIdentifier` and provenance.
 - `CollectRemovalCandidates(RemovalCandidateCollection)` is the ordinary
   capture-before-retract maintenance verb for reviewed records. It must
   be constrained to exact-`Zero` certainty and exact-`Zero` privacy

@@ -10,6 +10,7 @@
   (Watch (Subscription))
   (Unwatch (SubscriptionToken))
   (Remove (RecordIdentifier))
+  (ChangeRecord (RecordChange))
   (ChangeCertainty (CertaintyChange))
   (CollectRemovalCandidates (RemovalCandidateCollection))
 ]
@@ -25,6 +26,7 @@
   Watch ((Subscription))
   Unwatch ((SubscriptionToken))
   Remove ((RecordIdentifier))
+  ChangeRecord ((RecordChange))
   ChangeCertainty ((CertaintyChange))
   CollectRemovalCandidates ((RemovalCandidateCollection))
 
@@ -56,6 +58,7 @@
   RecordSubscriptionToken [u64]
 
   Entry [Topics Kind Description Certainty Privacy]
+  RecordChange [RecordIdentifier Entry]
   CertaintyChange [RecordIdentifier Certainty]
   Statement [StatementText]
   PublicRecordQuery [TopicSelection (Option Kind) CertaintySelection RecordedTimeSelection Mode]
@@ -78,6 +81,7 @@
   QuestionSummary [QuestionIdentifier QuestionText]
   RecordAccepted [RecordIdentifier]
   RecordRemoved [RecordIdentifier]
+  RecordMutationApplied [RecordIdentifier]
   CertaintyChanged [RecordIdentifier Certainty]
   StateObserved [PresenceView]
   RecordsObserved [(Vec RecordSummary)]
@@ -99,7 +103,7 @@
   Observation (State (Records PublicRecordQuery) (PrivateRecords PrivacyScopedRecordQuery) (RecordIdentifiers RecordIdentifierQuery) (PrivateRecordIdentifiers PrivacyScopedRecordIdentifierQuery) Topics Questions)
   Subscription (State (Records RecordSubscription) (PrivateRecords PrivacyScopedRecordSubscription))
   SubscriptionToken ((State StateSubscriptionToken) (Records RecordSubscriptionToken))
-  OperationKind (State Record Observe Watch Unwatch Remove ChangeCertainty CollectRemovalCandidates Tap Untap)
+  OperationKind (State Record Observe Watch Unwatch Remove ChangeRecord ChangeCertainty CollectRemovalCandidates Tap Untap)
   OperationReceived [OperationKind]
   EffectEmitted [SemaObservation]
 }
@@ -108,6 +112,7 @@
   (Reply
     RecordAccepted
     RecordRemoved
+    RecordMutationApplied
     StateObserved
     RecordsObserved
     RecordProvenancesObserved
