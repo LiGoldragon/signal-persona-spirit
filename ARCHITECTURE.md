@@ -9,9 +9,9 @@
 observing psyche state, observing intent records, and subscribing to those
 streams.
 
-Privileged lifecycle/configuration orders live in
-`owner-signal-persona-spirit`. Runtime actors, sockets, storage, classifier
-logic, and mind forwarding live in `persona-spirit`.
+Meta-policy lifecycle/configuration orders live in the sibling meta
+contract. Runtime actors, sockets, storage, classifier logic, and mind
+forwarding live in `persona-spirit`.
 
 ## Three-layer model
 
@@ -130,12 +130,12 @@ label is computed at observation publish time inside the daemon.
 | Capture time appears only in daemon-produced provenance. | `RecordProvenance` carries one bare `YYYY-MM-DD` date field and one bare `HH:MM:SS` time field. |
 | Record identifiers are output-only. | `RecordIdentifier` appears in descriptions/provenance replies, not in `Entry`; `persona-spirit` mints it from randomness, not from row position. |
 | Sema classification is daemon-side projection only; no executable Sema payloads appear on the wire. | `EffectEmitted` carries payloadless `SemaObservation` and daemon-side `ToSemaOperation` / `ToSemaOutcome` impls are the executable witnesses. |
-| This crate contains no runtime. | Source has no Kameo, Tokio, sockets, redb, or sema-engine code. |
+| This crate contains no runtime. | Source has no Kameo, Tokio, sockets, database engine, or sema-engine code. |
 
 ## Code Map
 
 ```text
-src/lib.rs              — request/reply/event records and signal_channel! invocation
+src/lib.rs              — request/reply/event records and explicit signal_channel! declaration
 src/migration.rs        — historical contract shapes and projection bridges for store migrations
 examples/canonical.nota — canonical NOTA examples
 tests/round_trip.rs     — rkyv frame, NOTA, verb, and stream witnesses

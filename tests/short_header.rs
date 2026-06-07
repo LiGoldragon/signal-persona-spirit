@@ -143,8 +143,8 @@ fn header(bytes: [u8; 8]) -> ShortHeader {
 }
 
 #[test]
-fn record_request_short_header_is_schema_derived_and_peekable() {
-    let expected = header([1, 0, 6, 7, 0, 0, 0, 0]);
+fn record_request_short_header_is_operation_ordered_and_peekable() {
+    let expected = ShortHeader::new(1);
     let frame = Operation::Record(entry()).into_frame(exchange());
 
     assert_eq!(frame.short_header(), expected);
@@ -210,7 +210,7 @@ fn generated_operation_dispatch_routes_by_short_header() {
 }
 
 #[test]
-fn nested_query_shape_sets_sub_enum_slots() {
+fn nested_query_uses_the_observe_operation_header() {
     let frame = Operation::Observe(Observation::Records(PublicRecordQuery {
         topic_selection: TopicSelection::any(),
         kind: None,
@@ -220,5 +220,5 @@ fn nested_query_shape_sets_sub_enum_slots() {
     }))
     .into_frame(exchange());
 
-    assert_eq!(frame.short_header(), header([2, 1, 0, 0, 0, 0, 1, 0]));
+    assert_eq!(frame.short_header(), ShortHeader::new(2));
 }

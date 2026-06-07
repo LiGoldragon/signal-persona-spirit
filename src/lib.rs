@@ -3,7 +3,7 @@
 //! This crate carries the peer-callable vocabulary for psyche statements,
 //! psyche-state observations, intent-record observations, and subscriptions.
 //! Runtime actors, sockets, storage, classifier logic, and downstream
-//! owner-Mutate forwarding live in `persona-spirit`.
+//! meta-policy forwarding live in `persona-spirit`.
 
 use nota_codec::{
     Decoder, Encoder, NotaDecode, NotaEncode, NotaEnum, NotaRecord, NotaTransparent, Token,
@@ -1568,4 +1568,47 @@ pub struct EffectEmitted {
     pub observation: SemaObservation,
 }
 
-signal_channel!([schema]);
+signal_channel! {
+    channel Spirit {
+        operation State(Statement),
+        operation Record(Entry),
+        operation Observe(Observation),
+        operation Watch(Subscription) opens DomainStream,
+        operation Unwatch(SubscriptionToken),
+        operation Remove(RecordIdentifier),
+        operation ChangeRecord(RecordChange),
+        operation ChangeCertainty(CertaintyChange),
+        operation CollectRemovalCandidates(RemovalCandidateCollection),
+    }
+    reply Reply {
+        RecordAccepted(RecordAccepted),
+        RecordRemoved(RecordRemoved),
+        RecordMutationApplied(RecordMutationApplied),
+        StateObserved(StateObserved),
+        RecordsObserved(RecordsObserved),
+        RecordProvenancesObserved(RecordProvenancesObserved),
+        TopicsObserved(TopicsObserved),
+        QuestionsObserved(QuestionsObserved),
+        SubscriptionOpened(SubscriptionOpened),
+        SubscriptionRetracted(SubscriptionRetracted),
+        RequestUnimplemented(RequestUnimplemented),
+        CertaintyChanged(CertaintyChanged),
+        RemovalCandidatesCollected(RemovalCandidatesCollected),
+    }
+    event Event {
+        StateChanged(StateChanged) belongs DomainStream,
+        RecordCaptured(RecordCaptured) belongs DomainStream,
+    }
+    stream DomainStream {
+        token SubscriptionToken;
+        opened SubscriptionOpened;
+        event StateChanged;
+        event RecordCaptured;
+        close Unwatch;
+    }
+    observable {
+        filter default;
+        operation_event OperationReceived;
+        effect_event EffectEmitted;
+    }
+}
