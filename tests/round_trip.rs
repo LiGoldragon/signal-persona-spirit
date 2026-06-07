@@ -4,14 +4,14 @@ use signal_frame::{
     SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
-    CertaintyChange, CertaintyChanged, CertaintySelection, Date, Description, EffectEmitted, Entry,
-    Event, FocusArea, Frame, FrameBody, Kind, Observation, ObservationMode, ObserverFilter,
-    ObserverFilterMatch, ObserverSubscriptionToken, Operation, OperationKind, OperationReceived,
-    Presence, PresenceView, PrivacyScopedRecordIdentifierQuery, PrivacyScopedRecordQuery,
-    PrivacySelection, PublicRecordQuery, QuestionIdentifier, QuestionSummary, QuestionText,
-    QuestionsObserved, RecordAccepted, RecordCaptured, RecordChange, RecordIdentifier,
-    RecordIdentifierQuery, RecordIdentifierSelection, RecordMutationApplied, RecordProvenance,
-    RecordProvenancesObserved, RecordQuery, RecordRemoved, RecordSubscription,
+    CertaintyChange, CertaintyChanged, CertaintySelection, Date, Description, EffectEmitted,
+    EffectOutcome, Entry, Event, FocusArea, Frame, FrameBody, Kind, Observation, ObservationMode,
+    ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken, Operation, OperationKind,
+    OperationReceived, Presence, PresenceView, PrivacyScopedRecordIdentifierQuery,
+    PrivacyScopedRecordQuery, PrivacySelection, PublicRecordQuery, QuestionIdentifier,
+    QuestionSummary, QuestionText, QuestionsObserved, RecordAccepted, RecordCaptured, RecordChange,
+    RecordIdentifier, RecordIdentifierQuery, RecordIdentifierSelection, RecordMutationApplied,
+    RecordProvenance, RecordProvenancesObserved, RecordQuery, RecordRemoved, RecordSubscription,
     RecordSubscriptionToken, RecordedTime, RecordedTimeRange, RecordedTimeSelection,
     RecordsObserved, RemovalCandidateCollection, RemovalCandidatesCollected, Reply,
     RequestUnimplemented, StateChanged, StateObserved, StateSubscriptionToken, Statement,
@@ -19,7 +19,7 @@ use signal_persona_spirit::{
     SubscriptionToken, Time, Topic, TopicCount, TopicSelection, Topics, TopicsObserved,
     UnimplementedReason,
 };
-use signal_sema::{Magnitude, SemaObservation, SemaOperation, SemaOutcome};
+use signal_sema::Magnitude;
 
 const CANONICAL: &str = include_str!("../examples/canonical.nota");
 
@@ -289,7 +289,8 @@ fn spirit_events_round_trip() {
             operation: OperationKind::Record,
         }),
         Event::EffectEmitted(EffectEmitted {
-            observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
+            operation: OperationKind::Record,
+            outcome: EffectOutcome::RecordCaptured,
         }),
     ];
 
@@ -381,7 +382,8 @@ fn spirit_observer_filter_routes_operation_and_effect_events() {
         operation: OperationKind::Record,
     };
     let effect = EffectEmitted {
-        observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
+        operation: OperationKind::Record,
+        outcome: EffectOutcome::RecordCaptured,
     };
 
     assert!(ObserverFilter::All.matches_operation_received(&operation));
@@ -700,9 +702,10 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         Event::EffectEmitted(EffectEmitted {
-            observation: SemaObservation::new(SemaOperation::Assert, SemaOutcome::Asserted),
+            operation: OperationKind::Record,
+            outcome: EffectOutcome::RecordCaptured,
         }),
-        "(EffectEmitted ((Assert Asserted)))",
+        "(EffectEmitted (Record RecordCaptured))",
     );
 }
 

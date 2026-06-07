@@ -58,11 +58,10 @@ without collision (spirit's domain doesn't use `Tap` as a verb).
 daemon owns its typed Command enum plus a `CommandExecutor` that knows
 the spirit tables. Executable payloads do not live in this contract.
 
-**Layer 3 — Sema classification (signal-sema).** Each Component
-Command projects to a payloadless `SemaOperation` class via
-`ToSemaOperation`; each Component Effect projects to a payloadless
-`SemaOutcome` class via `ToSemaOutcome`. Persona-introspect filters
-cross-component activity through `SemaObservation`.
+**Layer 3 — Sema classification (daemon-side).** Each Component
+Command projects to a payloadless Sema class inside the daemon.
+The public observer event stays contract-owned:
+`EffectEmitted { operation, outcome }`.
 
 **Frame layer.** Frame mechanics come from `signal-frame`.
 
@@ -80,10 +79,10 @@ The old shape coupled the wire vocabulary to Sema roots
 uses the contract-local verbs listed below, while Sema appears only as
 daemon-side payloadless classification.
 
-The generic observable classification event record is now
-`EffectEmitted`, matching the current architecture where generic
-observers see the effect publication moment carrying payloadless
-Sema observations rather than executable effect records.
+The generic observable event record is `EffectEmitted`, matching the
+current architecture where generic observers see the effect publication
+moment through the contract-owned operation/outcome pair rather than
+an executable daemon effect record or Sema payload.
 
 ## Contract Surface
 
@@ -129,7 +128,7 @@ label is computed at observation publish time inside the daemon.
 | Spirit never accepts client-provided timestamps on `Record` requests. | `record_request_with_client_timestamp_shape_is_rejected` and `record_request_with_parenthesized_client_date_time_shape_is_rejected` fail old timestamp-bearing input shapes. |
 | Capture time appears only in daemon-produced provenance. | `RecordProvenance` carries one bare `YYYY-MM-DD` date field and one bare `HH:MM:SS` time field. |
 | Record identifiers are output-only. | `RecordIdentifier` appears in descriptions/provenance replies, not in `Entry`; `persona-spirit` mints it from randomness, not from row position. |
-| Sema classification is daemon-side projection only; no executable Sema payloads appear on the wire. | `EffectEmitted` carries payloadless `SemaObservation` and daemon-side `ToSemaOperation` / `ToSemaOutcome` impls are the executable witnesses. |
+| Sema classification is daemon-side projection only; no Sema payloads appear on the wire. | `EffectEmitted` carries contract-owned `operation` and `outcome` fields; daemon-side projection impls are the executable witnesses. |
 | This crate contains no runtime. | Source has no Kameo, Tokio, sockets, database engine, or sema-engine code. |
 
 ## Code Map

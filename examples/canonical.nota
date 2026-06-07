@@ -51,4 +51,4 @@
 (StateChanged ((Active implementation)))
 (RecordCaptured (([0001] [workspace] Decision [description only] Maximum Zero)))
 (OperationReceived (Record))
-(EffectEmitted ((Assert Asserted)))
+(EffectEmitted (Record RecordCaptured))

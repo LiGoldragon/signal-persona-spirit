@@ -10,7 +10,7 @@ use nota_codec::{
 };
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use signal_frame::signal_channel;
-use signal_sema::{Magnitude, SemaObservation};
+use signal_sema::Magnitude;
 
 pub mod migration;
 
@@ -1563,9 +1563,26 @@ pub struct OperationReceived {
     pub operation: OperationKind,
 }
 
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+)]
+pub enum EffectOutcome {
+    StateChanged,
+    RecordCaptured,
+    RecordRemoved,
+    RecordChanged,
+    CertaintyChanged,
+    RemovalCandidatesCollected,
+    Observed,
+    StreamOpened,
+    StreamClosed,
+    NoChange,
+}
+
 #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
 pub struct EffectEmitted {
-    pub observation: SemaObservation,
+    pub operation: OperationKind,
+    pub outcome: EffectOutcome,
 }
 
 signal_channel! {
