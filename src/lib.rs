@@ -5,9 +5,7 @@
 //! Runtime actors, sockets, storage, classifier logic, and downstream
 //! meta-policy forwarding live in `persona-spirit`.
 
-use nota_codec::{
-    Decoder, Encoder, NotaDecode, NotaEncode, NotaEnum, NotaRecord, NotaTransparent, Token,
-};
+use nota_next::{Block, Delimiter, NotaBlock, NotaDecode, NotaDecodeError, NotaEncode, NotaString};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use signal_frame::signal_channel;
 use signal_sema::Magnitude;
@@ -19,7 +17,16 @@ const RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH: usize = 4;
 const RECORD_IDENTIFIER_RADIX: u128 = 36;
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub struct StatementText(String);
 
@@ -34,7 +41,16 @@ impl StatementText {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub struct Topic(String);
 
@@ -80,21 +96,20 @@ impl Topics {
         self.0.is_empty()
     }
 
-    fn validate(value: &[Topic]) -> nota_codec::Result<()> {
+    fn validate(value: &[Topic]) -> Result<(), NotaDecodeError> {
         if value.is_empty() {
-            return Err(nota_codec::Error::Validation {
-                type_name: "Topics",
-                message: "record must carry at least one topic".to_string(),
-            });
+            return Err(NotaDecodeError::Parse(
+                "Topics: record must carry at least one topic".to_owned(),
+            ));
         }
 
         let mut seen = std::collections::BTreeSet::<&str>::new();
         for topic in value {
             if !seen.insert(topic.as_str()) {
-                return Err(nota_codec::Error::Validation {
-                    type_name: "Topics",
-                    message: format!("record repeats topic {}", topic.as_str()),
-                });
+                return Err(NotaDecodeError::Parse(format!(
+                    "Topics: record repeats topic {}",
+                    topic.as_str()
+                )));
             }
         }
 
@@ -103,14 +118,14 @@ impl Topics {
 }
 
 impl NotaEncode for Topics {
-    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
-        self.0.encode(encoder)
+    fn to_nota(&self) -> String {
+        Delimiter::SquareBracket.wrap(self.0.iter().map(|topic| topic.as_str().to_owned()))
     }
 }
 
 impl NotaDecode for Topics {
-    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        let value = Vec::<Topic>::decode(decoder)?;
+    fn from_nota_block(block: &Block) -> Result<Self, NotaDecodeError> {
+        let value = Vec::<Topic>::from_nota_block(block)?;
         Self::validate(&value)?;
         Ok(Self(value))
     }
@@ -159,20 +174,20 @@ impl RecordIdentifier {
         RecordIdentifierCode::from_identifier(self).into_string()
     }
 
-    pub fn from_code(code: &str) -> nota_codec::Result<Self> {
+    pub fn from_code(code: &str) -> Result<Self, NotaDecodeError> {
         RecordIdentifierCode::new(code).into_identifier()
     }
 }
 
 impl NotaEncode for RecordIdentifier {
-    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
-        encoder.write_string(&self.code())
+    fn to_nota(&self) -> String {
+        NotaString::new(&self.code()).format()
     }
 }
 
 impl NotaDecode for RecordIdentifier {
-    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        Self::from_code(&decoder.read_string()?)
+    fn from_nota_block(block: &Block) -> Result<Self, NotaDecodeError> {
+        Self::from_code(&NotaBlock::new(block).parse_string()?)
     }
 }
 
@@ -211,14 +226,11 @@ impl RecordIdentifierCode {
         self.value
     }
 
-    fn into_identifier(self) -> nota_codec::Result<RecordIdentifier> {
+    fn into_identifier(self) -> Result<RecordIdentifier, NotaDecodeError> {
         if self.value.len() < RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH {
-            return Err(nota_codec::Error::Validation {
-                type_name: "RecordIdentifier",
-                message: format!(
-                    "record identifier code must be at least {RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH} characters"
-                ),
-            });
+            return Err(NotaDecodeError::Parse(format!(
+                "RecordIdentifier: record identifier code must be at least {RECORD_IDENTIFIER_MINIMUM_CODE_LENGTH} characters"
+            )));
         }
 
         let mut value = 0_u128;
@@ -227,18 +239,18 @@ impl RecordIdentifierCode {
             value = value
                 .checked_mul(RECORD_IDENTIFIER_RADIX)
                 .and_then(|accumulated| accumulated.checked_add(digit))
-                .ok_or_else(|| nota_codec::Error::Validation {
-                    type_name: "RecordIdentifier",
-                    message: "record identifier exceeds 96-bit range".to_string(),
+                .ok_or_else(|| {
+                    NotaDecodeError::Parse(
+                        "RecordIdentifier: record identifier exceeds 96-bit range".to_owned(),
+                    )
                 })?;
         }
 
         let bytes = value.to_be_bytes();
         if bytes[0..4] != [0, 0, 0, 0] {
-            return Err(nota_codec::Error::Validation {
-                type_name: "RecordIdentifier",
-                message: "record identifier exceeds 96-bit range".to_string(),
-            });
+            return Err(NotaDecodeError::Parse(
+                "RecordIdentifier: record identifier exceeds 96-bit range".to_owned(),
+            ));
         }
 
         Ok(RecordIdentifier::from_bytes([
@@ -255,22 +267,28 @@ impl RecordIdentifierCode {
         }
     }
 
-    fn digit_value(character: char) -> nota_codec::Result<u128> {
+    fn digit_value(character: char) -> Result<u128, NotaDecodeError> {
         match character {
             '0'..='9' => Ok((character as u8 - b'0') as u128),
             'a'..='z' => Ok((character as u8 - b'a' + 10) as u128),
-            _ => Err(nota_codec::Error::Validation {
-                type_name: "RecordIdentifier",
-                message: format!(
-                    "record identifier code uses unsupported character {character:?}; use lowercase base36"
-                ),
-            }),
+            _ => Err(NotaDecodeError::Parse(format!(
+                "RecordIdentifier: record identifier code uses unsupported character {character:?}; use lowercase base36"
+            ))),
         }
     }
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub struct Description(String);
 
@@ -307,17 +325,40 @@ impl Date {
     pub const fn new(year: u16, month: u8, day: u8) -> Self {
         Self { year, month, day }
     }
+
+    fn parse_part(
+        part: Option<&str>,
+        name: &'static str,
+        source: &str,
+    ) -> Result<u16, NotaDecodeError> {
+        part.ok_or_else(|| NotaDecodeError::Parse(format!("Date: missing {name} in {source:?}")))?
+            .parse::<u16>()
+            .map_err(|_| NotaDecodeError::Parse(format!("Date: invalid {name} in {source:?}")))
+    }
 }
 
 impl NotaEncode for Date {
-    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
-        encoder.write_date(self.year, self.month, self.day)
+    fn to_nota(&self) -> String {
+        format!("{:04}-{:02}-{:02}", self.year, self.month, self.day)
     }
 }
 
 impl NotaDecode for Date {
-    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        let (year, month, day) = decoder.read_date()?;
+    fn from_nota_block(block: &Block) -> Result<Self, NotaDecodeError> {
+        let source = NotaBlock::new(block).parse_string()?;
+        let mut parts = source.split('-');
+        let year = Self::parse_part(parts.next(), "year", &source)?;
+        let month = Self::parse_part(parts.next(), "month", &source)?;
+        let day = Self::parse_part(parts.next(), "day", &source)?;
+        if parts.next().is_some() {
+            return Err(NotaDecodeError::Parse(format!(
+                "Date: too many fields in {source:?}"
+            )));
+        }
+        let month = u8::try_from(month)
+            .map_err(|_| NotaDecodeError::Parse(format!("Date: invalid month in {source:?}")))?;
+        let day = u8::try_from(day)
+            .map_err(|_| NotaDecodeError::Parse(format!("Date: invalid day in {source:?}")))?;
         Ok(Self { year, month, day })
     }
 }
@@ -349,17 +390,36 @@ impl Time {
             second,
         }
     }
+
+    fn parse_part(
+        part: Option<&str>,
+        name: &'static str,
+        source: &str,
+    ) -> Result<u8, NotaDecodeError> {
+        part.ok_or_else(|| NotaDecodeError::Parse(format!("Time: missing {name} in {source:?}")))?
+            .parse::<u8>()
+            .map_err(|_| NotaDecodeError::Parse(format!("Time: invalid {name} in {source:?}")))
+    }
 }
 
 impl NotaEncode for Time {
-    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
-        encoder.write_time(self.hour, self.minute, self.second)
+    fn to_nota(&self) -> String {
+        format!("{:02}:{:02}:{:02}", self.hour, self.minute, self.second)
     }
 }
 
 impl NotaDecode for Time {
-    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        let (hour, minute, second) = decoder.read_time()?;
+    fn from_nota_block(block: &Block) -> Result<Self, NotaDecodeError> {
+        let source = NotaBlock::new(block).parse_string()?;
+        let mut parts = source.split(':');
+        let hour = Self::parse_part(parts.next(), "hour", &source)?;
+        let minute = Self::parse_part(parts.next(), "minute", &source)?;
+        let second = Self::parse_part(parts.next(), "second", &source)?;
+        if parts.next().is_some() {
+            return Err(NotaDecodeError::Parse(format!(
+                "Time: too many fields in {source:?}"
+            )));
+        }
         Ok(Self {
             hour,
             minute,
@@ -372,7 +432,8 @@ impl NotaDecode for Time {
     Archive,
     RkyvSerialize,
     RkyvDeserialize,
-    NotaRecord,
+    NotaEncode,
+    NotaDecode,
     Debug,
     Clone,
     Copy,
@@ -394,7 +455,17 @@ impl RecordedTime {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub struct RecordedTimeRange {
     pub first: RecordedTime,
@@ -412,7 +483,16 @@ impl RecordedTimeRange {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub struct FocusArea(String);
 
@@ -427,7 +507,16 @@ impl FocusArea {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub struct ArchivePath(String);
 
@@ -441,18 +530,32 @@ impl ArchivePath {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct StateSubscriptionToken {
     pub identifier: u64,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RecordSubscriptionToken {
     pub identifier: u64,
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub enum Kind {
     Decision,
@@ -468,23 +571,35 @@ pub enum ObservationMode {
     WithProvenance,
 }
 
+impl ObservationMode {
+    fn block_is_mode(block: &Block) -> bool {
+        matches!(
+            block.demote_to_string(),
+            Some("SummaryOnly" | "WithProvenance" | "DescriptionOnly")
+        )
+    }
+}
+
 impl NotaEncode for ObservationMode {
-    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
+    fn to_nota(&self) -> String {
         match self {
-            Self::SummaryOnly => encoder.write_pascal_identifier("SummaryOnly"),
-            Self::WithProvenance => encoder.write_pascal_identifier("WithProvenance"),
+            Self::SummaryOnly => "SummaryOnly".to_owned(),
+            Self::WithProvenance => "WithProvenance".to_owned(),
         }
     }
 }
 
 impl NotaDecode for ObservationMode {
-    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        match decoder.read_pascal_identifier()?.as_str() {
-            "SummaryOnly" | "DescriptionOnly" => Ok(Self::SummaryOnly),
-            "WithProvenance" => Ok(Self::WithProvenance),
-            other => Err(nota_codec::Error::UnknownVariant {
+    fn from_nota_block(block: &Block) -> Result<Self, NotaDecodeError> {
+        match block.demote_to_string() {
+            Some("SummaryOnly" | "DescriptionOnly") => Ok(Self::SummaryOnly),
+            Some("WithProvenance") => Ok(Self::WithProvenance),
+            Some(other) => Err(NotaDecodeError::UnknownVariant {
                 enum_name: "ObservationMode",
-                got: other.to_string(),
+                variant: other.to_string(),
+            }),
+            None => Err(NotaDecodeError::ExpectedAtom {
+                type_name: "ObservationMode",
             }),
         }
     }
@@ -493,14 +608,26 @@ impl NotaDecode for ObservationMode {
 pub type Mode = ObservationMode;
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub enum Presence {
     Active,
     Absent,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct Statement {
     pub text: StatementText,
 }
@@ -535,30 +662,36 @@ impl Entry {
 }
 
 impl NotaEncode for Entry {
-    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
-        encoder.start_record_untagged()?;
-        self.topics.encode(encoder)?;
-        self.kind.encode(encoder)?;
-        self.description.encode(encoder)?;
-        self.certainty.encode(encoder)?;
-        self.privacy.encode(encoder)?;
-        encoder.end_record()
+    fn to_nota(&self) -> String {
+        Delimiter::Parenthesis.wrap([
+            self.topics.to_nota(),
+            self.kind.to_nota(),
+            self.description.to_nota(),
+            self.certainty.to_nota(),
+            self.privacy.to_nota(),
+        ])
     }
 }
 
 impl NotaDecode for Entry {
-    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        decoder.expect_positional_record_start("Entry", 5)?;
-        let topics = Topics::decode(decoder)?;
-        let kind = Kind::decode(decoder)?;
-        let description = Description::decode(decoder)?;
-        let certainty = Certainty::decode(decoder)?;
-        let privacy = if decoder.peek_is_record_end()? {
+    fn from_nota_block(block: &Block) -> Result<Self, NotaDecodeError> {
+        let fields = NotaBlock::new(block).expect_delimited(Delimiter::Parenthesis, "Entry")?;
+        if !(4..=5).contains(&fields.len()) {
+            return Err(NotaDecodeError::ExpectedRootCount {
+                type_name: "Entry",
+                expected: 5,
+                found: fields.len(),
+            });
+        }
+        let topics = Topics::from_nota_block(&fields[0])?;
+        let kind = Kind::from_nota_block(&fields[1])?;
+        let description = Description::from_nota_block(&fields[2])?;
+        let certainty = Certainty::from_nota_block(&fields[3])?;
+        let privacy = if fields.len() == 4 {
             Magnitude::Zero
         } else {
-            Magnitude::decode(decoder)?
+            Magnitude::from_nota_block(&fields[4])?
         };
-        decoder.expect_record_end()?;
         Ok(Self {
             topics,
             kind,
@@ -570,14 +703,25 @@ impl NotaDecode for Entry {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
 )]
 pub struct CertaintyChange {
     pub identifier: RecordIdentifier,
     pub certainty: Certainty,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RecordChange {
     pub record_identifier: RecordIdentifier,
     pub entry: Entry,
@@ -590,7 +734,17 @@ impl RecordChange {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub enum MatchKind {
     Any,
@@ -636,28 +790,26 @@ impl TopicSelection {
         }
     }
 
-    fn validate(&self) -> nota_codec::Result<()> {
+    fn validate(&self) -> Result<(), NotaDecodeError> {
         match self.match_kind {
             MatchKind::Any if self.topics.is_empty() => Ok(()),
-            MatchKind::Any => Err(nota_codec::Error::Validation {
-                type_name: "TopicSelection",
-                message: "Any topic selection must not carry topics".to_string(),
-            }),
-            MatchKind::Partial | MatchKind::Full if self.topics.is_empty() => {
-                Err(nota_codec::Error::Validation {
-                    type_name: "TopicSelection",
-                    message: "Partial and Full topic selections must carry at least one topic"
-                        .to_string(),
-                })
-            }
+            MatchKind::Any => Err(NotaDecodeError::Parse(
+                "TopicSelection: Any topic selection must not carry topics".to_owned(),
+            )),
+            MatchKind::Partial | MatchKind::Full if self.topics.is_empty() => Err(
+                NotaDecodeError::Parse(
+                    "TopicSelection: Partial and Full topic selections must carry at least one topic"
+                        .to_owned(),
+                ),
+            ),
             MatchKind::Partial | MatchKind::Full => {
                 let mut seen = std::collections::BTreeSet::<&str>::new();
                 for topic in &self.topics {
                     if !seen.insert(topic.as_str()) {
-                        return Err(nota_codec::Error::Validation {
-                            type_name: "TopicSelection",
-                            message: format!("topic selection repeats topic {}", topic.as_str()),
-                        });
+                        return Err(NotaDecodeError::Parse(format!(
+                            "TopicSelection: topic selection repeats topic {}",
+                            topic.as_str()
+                        )));
                     }
                 }
                 Ok(())
@@ -667,21 +819,23 @@ impl TopicSelection {
 }
 
 impl NotaEncode for TopicSelection {
-    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
-        self.validate()?;
-        encoder.start_record_untagged()?;
-        self.match_kind.encode(encoder)?;
-        self.topics.encode(encoder)?;
-        encoder.end_record()
+    fn to_nota(&self) -> String {
+        self.validate()
+            .expect("TopicSelection must be valid before NOTA encoding");
+        Delimiter::Parenthesis.wrap([
+            self.match_kind.to_nota(),
+            Delimiter::SquareBracket
+                .wrap(self.topics.iter().map(|topic| topic.as_str().to_owned())),
+        ])
     }
 }
 
 impl NotaDecode for TopicSelection {
-    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        decoder.expect_positional_record_start("TopicSelection", 2)?;
-        let match_kind = MatchKind::decode(decoder)?;
-        let topics = Vec::<Topic>::decode(decoder)?;
-        decoder.expect_record_end()?;
+    fn from_nota_block(block: &Block) -> Result<Self, NotaDecodeError> {
+        let fields =
+            NotaBlock::new(block).expect_children(Delimiter::Parenthesis, "TopicSelection", 2)?;
+        let match_kind = MatchKind::from_nota_block(&fields[0])?;
+        let topics = Vec::<Topic>::from_nota_block(&fields[1])?;
         let selection = Self { match_kind, topics };
         selection.validate()?;
         Ok(selection)
@@ -689,7 +843,17 @@ impl NotaDecode for TopicSelection {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub enum CertaintySelection {
     Any,
@@ -714,7 +878,17 @@ impl CertaintySelection {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub enum PrivacySelection {
     Any,
@@ -738,7 +912,18 @@ impl PrivacySelection {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+)]
 pub enum RecordedTimeSelection {
     Any,
     Between(RecordedTimeRange),
@@ -857,82 +1042,71 @@ impl From<PublicRecordQuery> for RecordQuery {
 }
 
 impl NotaEncode for PublicRecordQuery {
-    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
-        encoder.start_record_untagged()?;
-        self.topic_selection.encode(encoder)?;
-        self.kind.encode(encoder)?;
-        self.certainty_selection.encode(encoder)?;
-        self.recorded_time_selection.encode(encoder)?;
-        self.mode.encode(encoder)?;
-        encoder.end_record()
+    fn to_nota(&self) -> String {
+        Delimiter::Parenthesis.wrap([
+            self.topic_selection.to_nota(),
+            self.kind.to_nota(),
+            self.certainty_selection.to_nota(),
+            self.recorded_time_selection.to_nota(),
+            self.mode.to_nota(),
+        ])
     }
 }
 
 impl NotaDecode for PublicRecordQuery {
-    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        decoder.expect_positional_record_start("PublicRecordQuery", 5)?;
-        let topic_selection = TopicSelection::decode(decoder)?;
-        let kind = Option::<Kind>::decode(decoder)?;
-        let next = decoder.peek_token()?;
-        let (certainty_selection, recorded_time_selection, mode) = match next {
-            Some(Token::Ident(name))
-                if name == "SummaryOnly"
-                    || name == "WithProvenance"
-                    || name == "DescriptionOnly" =>
-            {
-                (
-                    CertaintySelection::Any,
-                    RecordedTimeSelection::Any,
-                    ObservationMode::decode(decoder)?,
-                )
-            }
-            _ => {
-                let certainty_selection = CertaintySelection::decode(decoder)?;
-                let next = decoder.peek_token()?;
-                let (recorded_time_selection, mode) = match next {
-                    Some(Token::Ident(name))
-                        if name == "SummaryOnly"
-                            || name == "WithProvenance"
-                            || name == "DescriptionOnly" =>
-                    {
-                        (
-                            RecordedTimeSelection::Any,
-                            ObservationMode::decode(decoder)?,
-                        )
-                    }
-                    _ => {
-                        let recorded_time_selection = RecordedTimeSelection::decode(decoder)?;
-                        let next = decoder.peek_token()?;
-                        let mode = match next {
-                            Some(Token::Ident(name))
-                                if name == "SummaryOnly"
-                                    || name == "WithProvenance"
-                                    || name == "DescriptionOnly" =>
-                            {
-                                ObservationMode::decode(decoder)?
-                            }
-                            _ => {
-                                let privacy_selection = PrivacySelection::decode(decoder)?;
-                                if privacy_selection
-                                    != PrivacySelection::default_observation_privacy()
-                                {
-                                    return Err(nota_codec::Error::Validation {
-                                        type_name: "PublicRecordQuery",
-                                        message:
-                                            "public record queries cannot carry elevated privacy"
-                                                .to_string(),
-                                    });
-                                }
-                                ObservationMode::decode(decoder)?
-                            }
-                        };
-                        (recorded_time_selection, mode)
-                    }
-                };
-                (certainty_selection, recorded_time_selection, mode)
-            }
+    fn from_nota_block(block: &Block) -> Result<Self, NotaDecodeError> {
+        let fields =
+            NotaBlock::new(block).expect_delimited(Delimiter::Parenthesis, "PublicRecordQuery")?;
+        if !(3..=6).contains(&fields.len()) {
+            return Err(NotaDecodeError::ExpectedRootCount {
+                type_name: "PublicRecordQuery",
+                expected: 5,
+                found: fields.len(),
+            });
+        }
+        let topic_selection = TopicSelection::from_nota_block(&fields[0])?;
+        let kind = Option::<Kind>::from_nota_block(&fields[1])?;
+        let mut index = 2;
+
+        let certainty_selection = if ObservationMode::block_is_mode(&fields[index]) {
+            CertaintySelection::Any
+        } else {
+            let value = CertaintySelection::from_nota_block(&fields[index])?;
+            index += 1;
+            value
         };
-        decoder.expect_record_end()?;
+        let recorded_time_selection = if ObservationMode::block_is_mode(&fields[index]) {
+            RecordedTimeSelection::Any
+        } else {
+            let value = RecordedTimeSelection::from_nota_block(&fields[index])?;
+            index += 1;
+            value
+        };
+        if !ObservationMode::block_is_mode(&fields[index]) {
+            let privacy_selection = PrivacySelection::from_nota_block(&fields[index])?;
+            if privacy_selection != PrivacySelection::default_observation_privacy() {
+                return Err(NotaDecodeError::Parse(
+                    "PublicRecordQuery: public record queries cannot carry elevated privacy"
+                        .to_owned(),
+                ));
+            }
+            index += 1;
+        }
+        if index >= fields.len() {
+            return Err(NotaDecodeError::ExpectedRootCount {
+                type_name: "PublicRecordQuery",
+                expected: 5,
+                found: fields.len(),
+            });
+        }
+        let mode = ObservationMode::from_nota_block(&fields[index])?;
+        if index + 1 != fields.len() {
+            return Err(NotaDecodeError::ExpectedRootCount {
+                type_name: "PublicRecordQuery",
+                expected: index + 1,
+                found: fields.len(),
+            });
+        }
         Ok(Self {
             topic_selection,
             kind,
@@ -943,7 +1117,9 @@ impl NotaDecode for PublicRecordQuery {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct PrivacyScopedRecordQuery {
     pub privacy_selection: PrivacySelection,
     pub public_record_query: PublicRecordQuery,
@@ -969,83 +1145,68 @@ impl PrivacyScopedRecordQuery {
 }
 
 impl NotaEncode for RecordQuery {
-    fn encode(&self, encoder: &mut Encoder) -> nota_codec::Result<()> {
-        encoder.start_record_untagged()?;
-        self.topic_selection.encode(encoder)?;
-        self.kind.encode(encoder)?;
-        self.certainty_selection.encode(encoder)?;
-        self.recorded_time_selection.encode(encoder)?;
-        self.privacy_selection.encode(encoder)?;
-        self.mode.encode(encoder)?;
-        encoder.end_record()
+    fn to_nota(&self) -> String {
+        Delimiter::Parenthesis.wrap([
+            self.topic_selection.to_nota(),
+            self.kind.to_nota(),
+            self.certainty_selection.to_nota(),
+            self.recorded_time_selection.to_nota(),
+            self.privacy_selection.to_nota(),
+            self.mode.to_nota(),
+        ])
     }
 }
 
 impl NotaDecode for RecordQuery {
-    fn decode(decoder: &mut Decoder<'_>) -> nota_codec::Result<Self> {
-        decoder.expect_positional_record_start("RecordQuery", 6)?;
-        let topic_selection = TopicSelection::decode(decoder)?;
-        let kind = Option::<Kind>::decode(decoder)?;
-        let next = decoder.peek_token()?;
-        let (certainty_selection, recorded_time_selection, privacy_selection, mode) = match next {
-            Some(Token::Ident(name))
-                if name == "SummaryOnly"
-                    || name == "WithProvenance"
-                    || name == "DescriptionOnly" =>
-            {
-                (
-                    CertaintySelection::Any,
-                    RecordedTimeSelection::Any,
-                    PrivacySelection::default_observation_privacy(),
-                    ObservationMode::decode(decoder)?,
-                )
-            }
-            _ => {
-                let certainty_selection = CertaintySelection::decode(decoder)?;
-                let next = decoder.peek_token()?;
-                let (recorded_time_selection, privacy_selection, mode) = match next {
-                    Some(Token::Ident(name))
-                        if name == "SummaryOnly"
-                            || name == "WithProvenance"
-                            || name == "DescriptionOnly" =>
-                    {
-                        (
-                            RecordedTimeSelection::Any,
-                            PrivacySelection::default_observation_privacy(),
-                            ObservationMode::decode(decoder)?,
-                        )
-                    }
-                    _ => {
-                        let recorded_time_selection = RecordedTimeSelection::decode(decoder)?;
-                        let next = decoder.peek_token()?;
-                        let (privacy_selection, mode) = match next {
-                            Some(Token::Ident(name))
-                                if name == "SummaryOnly"
-                                    || name == "WithProvenance"
-                                    || name == "DescriptionOnly" =>
-                            {
-                                (
-                                    PrivacySelection::default_observation_privacy(),
-                                    ObservationMode::decode(decoder)?,
-                                )
-                            }
-                            _ => (
-                                PrivacySelection::decode(decoder)?,
-                                ObservationMode::decode(decoder)?,
-                            ),
-                        };
-                        (recorded_time_selection, privacy_selection, mode)
-                    }
-                };
-                (
-                    certainty_selection,
-                    recorded_time_selection,
-                    privacy_selection,
-                    mode,
-                )
-            }
+    fn from_nota_block(block: &Block) -> Result<Self, NotaDecodeError> {
+        let fields =
+            NotaBlock::new(block).expect_delimited(Delimiter::Parenthesis, "RecordQuery")?;
+        if !(3..=6).contains(&fields.len()) {
+            return Err(NotaDecodeError::ExpectedRootCount {
+                type_name: "RecordQuery",
+                expected: 6,
+                found: fields.len(),
+            });
+        }
+        let topic_selection = TopicSelection::from_nota_block(&fields[0])?;
+        let kind = Option::<Kind>::from_nota_block(&fields[1])?;
+        let mut index = 2;
+        let certainty_selection = if ObservationMode::block_is_mode(&fields[index]) {
+            CertaintySelection::Any
+        } else {
+            let value = CertaintySelection::from_nota_block(&fields[index])?;
+            index += 1;
+            value
         };
-        decoder.expect_record_end()?;
+        let recorded_time_selection = if ObservationMode::block_is_mode(&fields[index]) {
+            RecordedTimeSelection::Any
+        } else {
+            let value = RecordedTimeSelection::from_nota_block(&fields[index])?;
+            index += 1;
+            value
+        };
+        let privacy_selection = if ObservationMode::block_is_mode(&fields[index]) {
+            PrivacySelection::default_observation_privacy()
+        } else {
+            let value = PrivacySelection::from_nota_block(&fields[index])?;
+            index += 1;
+            value
+        };
+        if index >= fields.len() {
+            return Err(NotaDecodeError::ExpectedRootCount {
+                type_name: "RecordQuery",
+                expected: 6,
+                found: fields.len(),
+            });
+        }
+        let mode = ObservationMode::from_nota_block(&fields[index])?;
+        if index + 1 != fields.len() {
+            return Err(NotaDecodeError::ExpectedRootCount {
+                type_name: "RecordQuery",
+                expected: index + 1,
+                found: fields.len(),
+            });
+        }
         Ok(Self {
             topic_selection,
             kind,
@@ -1057,7 +1218,18 @@ impl NotaDecode for RecordQuery {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+)]
 pub enum RecordIdentifierSelection {
     Exact(RecordIdentifier),
 }
@@ -1071,7 +1243,16 @@ impl RecordIdentifierSelection {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
 )]
 pub struct RecordIdentifierQuery {
     pub record_identifier_selection: RecordIdentifierSelection,
@@ -1095,7 +1276,16 @@ impl RecordIdentifierQuery {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
 )]
 pub struct PrivacyScopedRecordIdentifierQuery {
     pub privacy_selection: PrivacySelection,
@@ -1115,18 +1305,33 @@ impl PrivacyScopedRecordIdentifierQuery {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RecordObservation {
     pub query: RecordQuery,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+)]
 pub enum OutputStream {
     StandardOutput,
     StandardError,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub enum ArchiveDatabaseTarget {
     Default,
     Path(ArchivePath),
@@ -1138,7 +1343,9 @@ impl ArchiveDatabaseTarget {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub enum OutputTarget {
     ArchiveDatabase(ArchiveDatabaseTarget),
     Print(OutputStream),
@@ -1162,7 +1369,9 @@ impl OutputTarget {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RemovalCandidateCollection {
     pub record_query: RecordQuery,
     pub output_target: OutputTarget,
@@ -1215,13 +1424,17 @@ impl RemovalCandidateCollection {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RecordSubscription {
     pub topic: Option<Topic>,
     pub mode: ObservationMode,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct PrivacyScopedRecordSubscription {
     pub privacy_selection: PrivacySelection,
     pub record_subscription: RecordSubscription,
@@ -1240,7 +1453,9 @@ impl PrivacyScopedRecordSubscription {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RecordSummary {
     pub identifier: RecordIdentifier,
     pub topics: Topics,
@@ -1250,7 +1465,9 @@ pub struct RecordSummary {
     pub privacy: Privacy,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RecordProvenance {
     pub summary: RecordSummary,
     pub date: Date,
@@ -1258,7 +1475,17 @@ pub struct RecordProvenance {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub enum RemovalCandidateSkipReason {
     ArchiveFailed,
@@ -1268,14 +1495,26 @@ pub enum RemovalCandidateSkipReason {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub struct SkippedRemovalCandidate {
     pub identifier: RecordIdentifier,
     pub reason: RemovalCandidateSkipReason,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RemovalCandidatesCollected {
     pub archived_records: Vec<RecordSummary>,
     pub removed_identifiers: Vec<RecordIdentifier>,
@@ -1308,20 +1547,33 @@ impl RemovalCandidatesCollected {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct TopicCount {
     pub topic: Topic,
     pub entries: u64,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct PresenceView {
     pub presence: Presence,
     pub focus: Option<FocusArea>,
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub struct QuestionIdentifier(String);
 
@@ -1336,7 +1588,16 @@ impl QuestionIdentifier {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub struct QuestionText(String);
 
@@ -1350,14 +1611,25 @@ impl QuestionText {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct QuestionSummary {
     pub identifier: QuestionIdentifier,
     pub question: QuestionText,
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, Copy, PartialEq, Eq,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
 )]
 pub struct RecordAccepted(RecordIdentifier);
 
@@ -1372,7 +1644,16 @@ impl RecordAccepted {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, Copy, PartialEq, Eq,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
 )]
 pub struct RecordRemoved(RecordIdentifier);
 
@@ -1387,7 +1668,16 @@ impl RecordRemoved {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, Copy, PartialEq, Eq,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
 )]
 pub struct RecordMutationApplied(RecordIdentifier);
 
@@ -1402,14 +1692,25 @@ impl RecordMutationApplied {
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, Copy, PartialEq, Eq,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
 )]
 pub struct CertaintyChanged {
     pub identifier: RecordIdentifier,
     pub certainty: Certainty,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct StateObserved(PresenceView);
 
 impl StateObserved {
@@ -1426,7 +1727,9 @@ impl StateObserved {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RecordsObserved(Vec<RecordSummary>);
 
 impl RecordsObserved {
@@ -1443,7 +1746,9 @@ impl RecordsObserved {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RecordProvenancesObserved(Vec<RecordProvenance>);
 
 impl RecordProvenancesObserved {
@@ -1460,7 +1765,9 @@ impl RecordProvenancesObserved {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct TopicsObserved(Vec<TopicCount>);
 
 impl TopicsObserved {
@@ -1477,7 +1784,9 @@ impl TopicsObserved {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct QuestionsObserved(Vec<QuestionSummary>);
 
 impl QuestionsObserved {
@@ -1494,7 +1803,9 @@ impl QuestionsObserved {
     }
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub enum Observation {
     State,
     Records(PublicRecordQuery),
@@ -1505,66 +1816,104 @@ pub enum Observation {
     Questions,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub enum Subscription {
     State,
     Records(RecordSubscription),
     PrivateRecords(PrivacyScopedRecordSubscription),
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub enum SubscriptionToken {
     State(StateSubscriptionToken),
     Records(RecordSubscriptionToken),
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub enum SubscriptionSnapshot {
     State(PresenceView),
     Records(Vec<RecordSummary>),
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct SubscriptionOpened {
     pub token: SubscriptionToken,
     pub snapshot: SubscriptionSnapshot,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct SubscriptionRetracted {
     pub token: SubscriptionToken,
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub enum UnimplementedReason {
     NotBuiltYet,
     IntegrationNotLanded,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RequestUnimplemented {
     pub reason: UnimplementedReason,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct StateChanged {
     pub state: PresenceView,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct RecordCaptured {
     pub record: RecordSummary,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct OperationReceived {
     pub operation: OperationKind,
 }
 
 #[derive(
-    Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+    Archive,
+    RkyvSerialize,
+    RkyvDeserialize,
+    NotaEncode,
+    NotaDecode,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
 )]
 pub enum EffectOutcome {
     StateChanged,
@@ -1579,7 +1928,9 @@ pub enum EffectOutcome {
     NoChange,
 }
 
-#[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+#[derive(
+    Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+)]
 pub struct EffectEmitted {
     pub operation: OperationKind,
     pub outcome: EffectOutcome,

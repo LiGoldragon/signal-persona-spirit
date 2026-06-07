@@ -1,4 +1,4 @@
-use nota_codec::{Decoder, Encoder, NotaDecode, NotaEncode};
+use nota_next::{NotaDecode, NotaEncode, NotaSource};
 use signal_frame::{
     ExchangeIdentifier, ExchangeLane, LaneSequence, NonEmpty, Reply as FrameReply, RequestPayload,
     SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
@@ -114,13 +114,12 @@ fn round_trip_nota<T>(value: T, expected: &str)
 where
     T: NotaEncode + NotaDecode + PartialEq + std::fmt::Debug,
 {
-    let mut encoder = Encoder::new();
-    value.encode(&mut encoder).expect("encode nota text");
-    let encoded = encoder.into_string();
+    let encoded = value.to_nota();
     assert_eq!(encoded, expected);
 
-    let mut decoder = Decoder::new(&encoded);
-    let recovered = T::decode(&mut decoder).expect("decode nota text");
+    let recovered = NotaSource::new(&encoded)
+        .parse::<T>()
+        .expect("decode nota text");
     assert_eq!(recovered, value);
     assert!(
         CANONICAL.contains(expected),
@@ -132,8 +131,9 @@ fn decode_only_nota<T>(text: &str, expected: T)
 where
     T: NotaDecode + PartialEq + std::fmt::Debug,
 {
-    let mut decoder = Decoder::new(text);
-    let recovered = T::decode(&mut decoder).expect("decode nota text");
+    let recovered = NotaSource::new(text)
+        .parse::<T>()
+        .expect("decode nota text");
     assert_eq!(recovered, expected);
 }
 
@@ -255,9 +255,10 @@ fn spirit_replies_round_trip() {
 
 #[test]
 fn legacy_description_only_input_decodes_as_summary_only() {
-    let mut decoder =
-        Decoder::new("(Observe (RecordIdentifiers ((Exact [00t9]) DescriptionOnly)))");
-    let operation = Operation::decode(&mut decoder).expect("legacy mode decodes");
+    let operation =
+        NotaSource::new("(Observe (RecordIdentifiers ((Exact [00t9]) DescriptionOnly)))")
+            .parse::<Operation>()
+            .expect("legacy mode decodes");
 
     assert_eq!(
         operation,
@@ -670,7 +671,7 @@ fn spirit_canonical_examples_round_trip() {
     );
     round_trip_nota(
         Reply::StateObserved(StateObserved::new(state())),
-        "(StateObserved (Active (Some implementation)))",
+        "(StateObserved (Active (Some [implementation])))",
     );
     round_trip_nota(
         Reply::RecordsObserved(RecordsObserved::new(vec![description()])),
@@ -685,14 +686,14 @@ fn spirit_canonical_examples_round_trip() {
             topic: Topic::new("workspace"),
             entries: 2,
         }])),
-        "(TopicsObserved [(workspace 2)])",
+        "(TopicsObserved [([workspace] 2)])",
     );
     round_trip_nota(
         Reply::QuestionsObserved(QuestionsObserved::new(vec![QuestionSummary {
             identifier: QuestionIdentifier::new("question-one"),
             question: QuestionText::new("which intent wins?"),
         }])),
-        "(QuestionsObserved [(question-one [which intent wins?])])",
+        "(QuestionsObserved [([question-one] [which intent wins?])])",
     );
     round_trip_nota(
         Event::RecordCaptured(RecordCaptured {
@@ -711,15 +712,16 @@ fn spirit_canonical_examples_round_trip() {
 
 #[test]
 fn record_request_with_client_timestamp_shape_is_rejected() {
-    let mut decoder =
-        Decoder::new("(Record ([workspace] Decision [description only] Maximum 1779000000))");
-    Operation::decode(&mut decoder).expect_err("client timestamp must not decode");
+    NotaSource::new("(Record ([workspace] Decision [description only] Maximum 1779000000))")
+        .parse::<Operation>()
+        .expect_err("client timestamp must not decode");
 }
 
 #[test]
 fn record_request_with_duplicate_topics_is_rejected() {
-    let mut decoder = Decoder::new("(Record ([spirit spirit] Decision [duplicate] Maximum))");
-    let error = Operation::decode(&mut decoder).expect_err("duplicate topics must not decode");
+    let error = NotaSource::new("(Record ([spirit spirit] Decision [duplicate] Maximum))")
+        .parse::<Operation>()
+        .expect_err("duplicate topics must not decode");
 
     assert!(
         error.to_string().contains("record repeats topic spirit"),
@@ -729,8 +731,9 @@ fn record_request_with_duplicate_topics_is_rejected() {
 
 #[test]
 fn record_request_with_empty_topics_is_rejected() {
-    let mut decoder = Decoder::new("(Record ([] Decision [missing topic] Maximum))");
-    let error = Operation::decode(&mut decoder).expect_err("empty topics must not decode");
+    let error = NotaSource::new("(Record ([] Decision [missing topic] Maximum))")
+        .parse::<Operation>()
+        .expect_err("empty topics must not decode");
 
     assert!(
         error
@@ -742,8 +745,9 @@ fn record_request_with_empty_topics_is_rejected() {
 
 #[test]
 fn record_request_with_parenthesized_client_date_time_shape_is_rejected() {
-    let mut decoder = Decoder::new(
+    NotaSource::new(
         "(Record ([workspace] Decision [description only] Maximum (2026 5 20) (14 30 0)))",
-    );
-    Operation::decode(&mut decoder).expect_err("parenthesized client date/time must not decode");
+    )
+    .parse::<Operation>()
+    .expect_err("parenthesized client date/time must not decode");
 }

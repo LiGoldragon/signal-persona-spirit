@@ -1,4 +1,4 @@
-use nota_codec::{Decoder, NotaDecode};
+use nota_next::NotaSource;
 use signal_persona_spirit::{
     Entry, Kind, Operation,
     migration::{V010ToV011, V020ToV030, V030ToV040, v010, v020, v030},
@@ -42,10 +42,10 @@ fn v010_record_entry_projects_to_current_entry_shape() {
 
 #[test]
 fn v010_nota_record_projects_to_current_operation() {
-    let mut decoder = Decoder::new(
+    let source = NotaSource::new(
         "(Record (workspace Decision [description] [context dropped] Medium [quote dropped]))",
     );
-    let source = v010::Operation::decode(&mut decoder).unwrap();
+    let source = source.parse::<v010::Operation>().unwrap();
 
     let current =
         <V010ToV011 as VersionProjection<v010::Operation, Operation>>::project(source).unwrap();

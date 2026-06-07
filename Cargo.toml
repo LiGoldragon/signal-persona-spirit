@@ -2,7 +2,7 @@
 name         = "signal-persona-spirit"
 version      = "0.5.0"
 edition      = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 license      = "MIT OR Apache-2.0"
 repository   = "https://github.com/LiGoldragon/signal-persona-spirit"
 description  = "Signal contract for the ordinary persona-spirit surface."
@@ -15,7 +15,7 @@ path = "src/lib.rs"
 [dependencies]
 signal-frame = { git = "https://github.com/LiGoldragon/signal-frame.git", branch = "main" }
 signal-sema  = { git = "https://github.com/LiGoldragon/signal-sema.git", branch = "main" }
-nota-codec   = { git = "https://github.com/LiGoldragon/nota-codec.git", branch = "main" }
+nota-next    = { git = "https://github.com/LiGoldragon/nota-next.git", branch = "main" }
 rkyv         = { version = "0.8", default-features = false, features = ["std", "bytecheck", "little_endian", "pointer_width_32", "unaligned"] }
 thiserror    = "2"
 version-projection = { git = "https://github.com/LiGoldragon/version-projection.git", branch = "main" }

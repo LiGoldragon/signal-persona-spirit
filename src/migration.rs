@@ -6,11 +6,20 @@ use version_projection::{ProjectionError, VersionProjection};
 use crate::{Description, Entry, Kind, Operation, Statement, Topic, Topics};
 
 pub mod v010 {
-    use nota_codec::{NotaEnum, NotaRecord, NotaTransparent};
+    use nota_next::{NotaDecode, NotaEncode};
     use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub struct Topic(String);
 
@@ -25,7 +34,16 @@ pub mod v010 {
     }
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub struct Summary(String);
 
@@ -40,7 +58,16 @@ pub mod v010 {
     }
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub struct Context(String);
 
@@ -51,7 +78,16 @@ pub mod v010 {
     }
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub struct Quote(String);
 
@@ -62,7 +98,17 @@ pub mod v010 {
     }
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        Copy,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub enum Kind {
         Decision,
@@ -85,7 +131,17 @@ pub mod v010 {
     }
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        Copy,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub enum Certainty {
         Maximum,
@@ -93,7 +149,9 @@ pub mod v010 {
         Minimum,
     }
 
-    #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+    #[derive(
+        Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+    )]
     pub struct Entry {
         pub topic: Topic,
         pub kind: Kind,
@@ -103,19 +161,30 @@ pub mod v010 {
         pub quote: Quote,
     }
 
-    #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+    #[derive(
+        Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+    )]
     pub enum Operation {
         Record(Entry),
     }
 }
 
 pub mod v020 {
-    use nota_codec::{NotaEnum, NotaRecord, NotaTransparent};
+    use nota_next::{NotaDecode, NotaEncode};
     use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
     use signal_sema::Magnitude;
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub struct Topic(String);
 
@@ -130,7 +199,16 @@ pub mod v020 {
     }
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub struct Description(String);
 
@@ -145,7 +223,17 @@ pub mod v020 {
     }
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        Copy,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub enum Kind {
         Decision,
@@ -167,7 +255,9 @@ pub mod v020 {
         }
     }
 
-    #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaRecord, Debug, Clone, PartialEq, Eq)]
+    #[derive(
+        Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+    )]
     pub struct Entry {
         pub topic: Topic,
         pub kind: Kind,
@@ -175,19 +265,30 @@ pub mod v020 {
         pub certainty: Magnitude,
     }
 
-    #[derive(Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, PartialEq, Eq)]
+    #[derive(
+        Archive, RkyvSerialize, RkyvDeserialize, NotaEncode, NotaDecode, Debug, Clone, PartialEq, Eq,
+    )]
     pub enum Operation {
         Record(Entry),
     }
 }
 
 pub mod v030 {
-    use nota_codec::{NotaEnum, NotaTransparent};
+    use nota_next::{NotaDecode, NotaEncode};
     use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
     use signal_sema::Magnitude;
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub struct Topic(String);
 
@@ -224,7 +325,16 @@ pub mod v030 {
     }
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaTransparent, Debug, Clone, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub struct Description(String);
 
@@ -239,7 +349,17 @@ pub mod v030 {
     }
 
     #[derive(
-        Archive, RkyvSerialize, RkyvDeserialize, NotaEnum, Debug, Clone, Copy, PartialEq, Eq, Hash,
+        Archive,
+        RkyvSerialize,
+        RkyvDeserialize,
+        NotaEncode,
+        NotaDecode,
+        Debug,
+        Clone,
+        Copy,
+        PartialEq,
+        Eq,
+        Hash,
     )]
     pub enum Kind {
         Decision,
