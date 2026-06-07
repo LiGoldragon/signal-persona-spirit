@@ -17,17 +17,10 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
 
 ## Invariants
 
-- Under the three-layer model (per
-  `~/primary/skills/component-triad.md` §"Verbs come in three layers"):
-  - The wire carries contract-local verbs in verb form (`State`,
-    `Record`, `Observe`, `Watch`, `Unwatch`, plus mandatory `Tap` /
-    `Untap`).
-  - The daemon owns typed Component Commands that lower contract
-    operations to executable form.
-  - Each Command projects to a payloadless Sema class label via
-    `ToSemaOperation` for cross-component observation.
-- `State` projects to Sema `Assert` at the daemon.
-- `Record` projects to Sema `Assert` at the daemon.
+- The wire carries contract-local verbs in verb form (`State`,
+  `Record`, `Observe`, `Watch`, `Unwatch`, plus mandatory `Tap` /
+  `Untap`). The daemon owns typed component commands and SEMA reads/writes;
+  this contract does not mirror database-action classes.
 - `Entry` is one top-level statement without client-provided capture time.
   It carries one or more user-created topic strings; topic filters match
   membership in that topic vector.
@@ -59,11 +52,12 @@ runtime, no actors, no sockets, no storage, and no classifier logic.
   explicit, version-named (`migration::v030`), and tested; they may
   project into the current contract, but they must not contain daemon
   runtime, sockets, actors, storage, or classifier logic.
-- `Observe`-shaped operations project to Sema `Match`.
-- Stream-open variants (domain `Watch` and mandatory `Tap`) project
-  to Sema `Subscribe` and carry explicit stream relations.
-- Stream-close variants (domain `Unwatch` and mandatory `Untap`)
-  project to Sema `Retract`.
+- `Observe`-shaped operations stay public read verbs; the durable read plan is
+  daemon-owned.
+- Stream-open variants (domain `Watch` and mandatory `Tap`) carry explicit
+  stream relations without exposing a Sema-class root.
+- Stream-close variants (domain `Unwatch` and mandatory `Untap`) close typed
+  streams without exposing a Sema-class root.
 - Intent observation is description-first unless the caller asks for
   provenance.
 - Intent observations can select all topics with `Any`, one-or-more

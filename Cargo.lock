@@ -279,19 +279,8 @@ dependencies = [
  "nota-next",
  "rkyv",
  "signal-frame",
- "signal-sema",
  "thiserror",
  "version-projection",
-]
-
-[[package]]
-name = "signal-sema"
-version = "0.1.0"
-source = "git+https://github.com/LiGoldragon/signal-sema.git?branch=main#4f75d1c31b7481e3f212e1885b98939a5172ce1a"
-dependencies = [
- "nota-next",
- "rkyv",
- "thiserror",
 ]
 
 [[package]]

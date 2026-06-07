@@ -13,17 +13,18 @@ Meta-policy lifecycle/configuration orders live in the sibling meta
 contract. Runtime actors, sockets, storage, classifier logic, and mind
 forwarding live in `persona-spirit`.
 
-## Three-layer model
+## Contract/Daemon Boundary
 
-This contract is on the current three-layer model affirmed
-2026-05-20:
+This contract owns only the ordinary public wire vocabulary. The
+`persona-spirit` daemon lowers those operations into its own Nexus commands,
+SEMA reads or writes, effects, rejections, replies, and observer events.
 
 ```text
-contract Operation  ->  component Command  ->  Sema classification
-wire vocabulary         daemon executable      payloadless observation
+contract Operation  ->  daemon Nexus/SEMA/effect work
+wire vocabulary         daemon executable boundary
 ```
 
-**Layer 1 — Contract operations on the wire (this crate).**
+**Contract operations on the wire (this crate).**
 The ordinary contract uses contract-local verbs:
 - `State` (the psyche stating intent, payload `Statement`),
 - `Record` (an agent submitting a typed intent entry without capture time,
@@ -54,60 +55,43 @@ ordinary socket. The domain-specific `Watch`/`Unwatch` for psyche-
 state and intent-record streams is a separate surface and coexists
 without collision (spirit's domain doesn't use `Tap` as a verb).
 
-**Layer 2 — Component Commands (persona-spirit daemon).** The spirit
+**Component commands (persona-spirit daemon).** The spirit
 daemon owns its typed Command enum plus a `CommandExecutor` that knows
 the spirit tables. Executable payloads do not live in this contract.
 
-**Layer 3 — Sema classification (daemon-side).** Each Component
-Command projects to a payloadless Sema class inside the daemon.
 The public observer event stays contract-owned:
-`EffectEmitted { operation, outcome }`.
+`EffectEmitted { operation, outcome }`. It does not carry
+`SemaObservation` or depend on `signal-sema`.
 
 **Frame layer.** Frame mechanics come from `signal-frame`.
 
 References:
-- `primary/reports/designer/246-v4-bundled-fix-deep-design-with-examples.md`
-- `primary/reports/designer/248-three-layer-changes-for-operators.md`
-- `primary/skills/component-triad.md` §"Verbs come in three layers"
 - `primary/skills/contract-repo.md` §"Public contracts use contract-local operation verbs"
-
-## Migration history — three-layer model (2026-05-20)
-
-The old shape coupled the wire vocabulary to Sema roots
-(`Assert Statement`, `Match *Observation`, `Subscribe *Subscription`,
-`Retract *SubscriptionRetraction`). That shape is retired. The wire now
-uses the contract-local verbs listed below, while Sema appears only as
-daemon-side payloadless classification.
 
 The generic observable event record is `EffectEmitted`, matching the
 current architecture where generic observers see the effect publication
 moment through the contract-owned operation/outcome pair rather than
-an executable daemon effect record or Sema payload.
+an executable daemon effect record or database-classification payload.
 
 ## Contract Surface
 
-| Operation | Payload | Sema class (Layer 3 projection) |
-|---|---|---|
-| `State` | `Statement` | `Assert` |
-| `Record` | `Entry` without date/time | `Assert` |
-| `Observe` (state kind) | `Observation::State` unit variant | `Match` |
-| `Observe` (Records kind) | `Observation::Records` | `Match` |
-| `Observe` (RecordIdentifiers kind) | `Observation::RecordIdentifiers` | `Match` |
-| `Observe` (Topics kind) | `Observation::Topics` unit variant | `Match` |
-| `Observe` (questions kind) | `Observation::Questions` unit variant | `Match` |
-| `Watch` (domain state stream) | `Subscription::State` unit variant | `Subscribe` |
-| `Unwatch` (domain state stream) | `StateSubscriptionToken` | `Retract` |
-| `Watch` (domain records stream) | `RecordsSubscription` | `Subscribe` |
-| `Unwatch` (domain records stream) | `RecordsSubscriptionToken` | `Retract` |
-| `Remove` | `RecordIdentifier` | `Retract` |
-| `ChangeCertainty` | `CertaintyChange` | `Mutate` |
-| `ChangeRecord` | `RecordChange` | `Mutate` |
-| `CollectRemovalCandidates` | `RemovalCandidateCollection` | `Retract` |
-| `Tap` (mandatory observability) | `ObserverFilter` | `Subscribe` |
-| `Untap` (mandatory observability) | `ObserverSubscriptionToken` | `Retract` |
+| Operation | Payload |
+|---|---|
+| `State` | `Statement` |
+| `Record` | `Entry` without date/time |
+| `Observe` | closed `Observation` enum |
+| `Watch` | `Subscription` stream selector |
+| `Unwatch` | `SubscriptionToken` |
+| `Remove` | `RecordIdentifier` |
+| `ChangeCertainty` | `CertaintyChange` |
+| `ChangeRecord` | `RecordChange` |
+| `CollectRemovalCandidates` | `RemovalCandidateCollection` |
+| `Tap` | `ObserverFilter` |
+| `Untap` | `ObserverSubscriptionToken` |
 
-The wire form carries the contract-local verb only; the Sema class
-label is computed at observation publish time inside the daemon.
+The wire form carries the contract-local verb only. Database classes and store
+effects are daemon-owned lowering, not public operation roots, event payloads,
+or dependencies of this crate.
 
 ## Constraints
 
@@ -128,7 +112,7 @@ label is computed at observation publish time inside the daemon.
 | Spirit never accepts client-provided timestamps on `Record` requests. | `record_request_with_client_timestamp_shape_is_rejected` and `record_request_with_parenthesized_client_date_time_shape_is_rejected` fail old timestamp-bearing input shapes. |
 | Capture time appears only in daemon-produced provenance. | `RecordProvenance` carries one bare `YYYY-MM-DD` date field and one bare `HH:MM:SS` time field. |
 | Record identifiers are output-only. | `RecordIdentifier` appears in descriptions/provenance replies, not in `Entry`; `persona-spirit` mints it from randomness, not from row position. |
-| Sema classification is daemon-side projection only; no Sema payloads appear on the wire. | `EffectEmitted` carries contract-owned `operation` and `outcome` fields; daemon-side projection impls are the executable witnesses. |
+| Database classification is daemon-side only; no Sema payloads appear on the wire. | `EffectEmitted` carries contract-owned `operation` and `outcome` fields, and `spirit_contract_has_no_sema_classification_dependency_or_roots` guards the dependency and head set. |
 | This crate contains no runtime. | Source has no Kameo, Tokio, sockets, database engine, or sema-engine code. |
 
 ## Code Map

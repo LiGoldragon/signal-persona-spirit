@@ -1,9 +1,8 @@
 use nota_next::NotaSource;
 use signal_persona_spirit::{
-    Entry, Kind, Operation,
+    Entry, Kind, Magnitude, Operation,
     migration::{V010ToV011, V020ToV030, V030ToV040, v010, v020, v030},
 };
-use signal_sema::Magnitude;
 use version_projection::VersionProjection;
 
 #[test]

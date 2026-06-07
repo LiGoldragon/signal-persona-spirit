@@ -120,11 +120,9 @@ counts or time windows.
   `Statement`, `Record` not `Entry`-as-a-verb, `Observe` not
   `Observation`. Per the verb-form rule in `intent/naming.nota`
   19:45Z.
-- **Three-layer model.** Layer 1 contract operations on the wire
-  (this crate). Layer 2 component commands inside the
-  `persona-spirit` daemon. Layer 3 payloadless Sema classification
-  for observability. *Executable payloads do not live in this
-  contract.*
+- **Daemon lowering boundary.** This crate owns only contract operations on the
+  wire. Component commands, SEMA reads/writes, storage classification, and
+  executable payloads live inside the `persona-spirit` daemon.
 - **No compatibility scaffold for retired schema emission.**
   The public root-level `Operation`/`Reply`/`Event` types are the
 contract surface. The retired qualified dual path and box-form test
@@ -140,11 +138,8 @@ contract surface. The retired qualified dual path and box-form test
 
 ## See also
 
-- `ARCHITECTURE.md` — three-layer model + wire vocabulary.
+- `ARCHITECTURE.md` — daemon lowering boundary + wire vocabulary.
 - `src/lib.rs` — payload types plus the current explicit
   `signal_channel!` declaration.
-- Primary workspace: `reports/designer/349-context-maintenance-
-  sweep-2026-05-25/1-poc-schema-stack-explainer.md` — full
-  explainer of the schema-driven full-stack POC.
 - Primary workspace: `repos/persona-spirit/INTENT.md` — the
   daemon-side schema-driven actor architecture.

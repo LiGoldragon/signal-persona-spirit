@@ -1,9 +1,8 @@
 //! Adjacent-version projection witnesses for the Spirit contract.
 
-use signal_sema::Magnitude;
 use version_projection::{ProjectionError, VersionProjection};
 
-use crate::{Description, Entry, Kind, Operation, Statement, Topic, Topics};
+use crate::{Description, Entry, Kind, Magnitude, Operation, Statement, Topic, Topics};
 
 pub mod v010 {
     use nota_next::{NotaDecode, NotaEncode};
@@ -170,9 +169,9 @@ pub mod v010 {
 }
 
 pub mod v020 {
+    use crate::Magnitude;
     use nota_next::{NotaDecode, NotaEncode};
     use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
-    use signal_sema::Magnitude;
 
     #[derive(
         Archive,
@@ -274,9 +273,9 @@ pub mod v020 {
 }
 
 pub mod v030 {
+    use crate::Magnitude;
     use nota_next::{NotaDecode, NotaEncode};
     use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
-    use signal_sema::Magnitude;
 
     #[derive(
         Archive,

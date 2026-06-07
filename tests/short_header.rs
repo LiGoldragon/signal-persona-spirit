@@ -3,12 +3,12 @@ use signal_frame::{
     short_header_from_length_prefixed,
 };
 use signal_persona_spirit::{
-    CertaintyChange, CertaintySelection, Description, Entry, Frame, FrameBody, Kind, Observation,
-    ObservationMode, Operation, OperationKind, PublicRecordQuery, RecordChange, RecordIdentifier,
-    RecordedTimeSelection, RemovalCandidateCollection, Reply, RequestUnimplemented, Statement,
-    StatementText, Topic, TopicSelection, Topics, UnimplementedReason,
+    CertaintyChange, CertaintySelection, Description, Entry, Frame, FrameBody, Kind, Magnitude,
+    Observation, ObservationMode, Operation, OperationKind, PublicRecordQuery, RecordChange,
+    RecordIdentifier, RecordedTimeSelection, RemovalCandidateCollection, Reply,
+    RequestUnimplemented, Statement, StatementText, Topic, TopicSelection, Topics,
+    UnimplementedReason,
 };
-use signal_sema::Magnitude;
 
 #[derive(Debug, thiserror::Error)]
 enum DispatchError {

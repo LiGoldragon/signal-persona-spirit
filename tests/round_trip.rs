@@ -1,13 +1,14 @@
 use nota_next::{NotaDecode, NotaEncode, NotaSource};
 use signal_frame::{
     ExchangeIdentifier, ExchangeLane, LaneSequence, NonEmpty, Reply as FrameReply, RequestPayload,
-    SessionEpoch, StreamEventIdentifier, StreamingFrameBody, SubReply, SubscriptionTokenInner,
+    SessionEpoch, SignalOperationHeads, StreamEventIdentifier, StreamingFrameBody, SubReply,
+    SubscriptionTokenInner,
 };
 use signal_persona_spirit::{
     CertaintyChange, CertaintyChanged, CertaintySelection, Date, Description, EffectEmitted,
-    EffectOutcome, Entry, Event, FocusArea, Frame, FrameBody, Kind, Observation, ObservationMode,
-    ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken, Operation, OperationKind,
-    OperationReceived, Presence, PresenceView, PrivacyScopedRecordIdentifierQuery,
+    EffectOutcome, Entry, Event, FocusArea, Frame, FrameBody, Kind, Magnitude, Observation,
+    ObservationMode, ObserverFilter, ObserverFilterMatch, ObserverSubscriptionToken, Operation,
+    OperationKind, OperationReceived, Presence, PresenceView, PrivacyScopedRecordIdentifierQuery,
     PrivacyScopedRecordQuery, PrivacySelection, PublicRecordQuery, QuestionIdentifier,
     QuestionSummary, QuestionText, QuestionsObserved, RecordAccepted, RecordCaptured, RecordChange,
     RecordIdentifier, RecordIdentifierQuery, RecordIdentifierSelection, RecordMutationApplied,
@@ -19,7 +20,6 @@ use signal_persona_spirit::{
     SubscriptionToken, Time, Topic, TopicCount, TopicSelection, Topics, TopicsObserved,
     UnimplementedReason,
 };
-use signal_sema::Magnitude;
 
 const CANONICAL: &str = include_str!("../examples/canonical.nota");
 
@@ -349,6 +349,36 @@ fn spirit_request_exposes_contract_owned_kind() {
         .kind(),
         OperationKind::Watch
     );
+}
+
+#[test]
+fn spirit_contract_has_no_sema_classification_dependency_or_roots() {
+    let manifest = include_str!("../Cargo.toml");
+    assert!(
+        !manifest.contains("signal-sema"),
+        "ordinary signal contracts must not depend on signal-sema for public wire vocabulary"
+    );
+
+    let source = include_str!("../src/lib.rs");
+    assert!(
+        !source.contains("SemaObservation"),
+        "EffectEmitted must stay a contract-owned operation/outcome event, not a SemaObservation payload"
+    );
+
+    let heads = <Operation as SignalOperationHeads>::HEADS;
+    for forbidden in [
+        "Assert",
+        "Mutate",
+        "Retract",
+        "Match",
+        "Subscribe",
+        "Validate",
+    ] {
+        assert!(
+            !heads.contains(&forbidden),
+            "Sema classification root {forbidden} must not appear on the public spirit wire"
+        );
+    }
 }
 
 #[test]
